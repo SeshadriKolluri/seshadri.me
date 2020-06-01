@@ -1,48 +1,45 @@
 ---
 authors:
 - admin
-bio: My research interests include distributed robotics, mobile computing and programmable
-  matter.
+bio: My research interests include data science, data visualization, machine learning, Gallium Nitride electronics, and semiconductor technology development.
 education:
   courses:
-  - course: PhD in Artificial Intelligence
-    institution: Stanford University
-    year: 2012
-  - course: MEng in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2009
-  - course: BSc in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2008
+  - course: PhD in Electrical and Computer Engineering
+    institution: University of California, Santa Barbara
+    year: 2011
+  - course: MS in Electrical and Computer Engineering
+    institution: University of California, Santa Barbara
+    year: 2007
+  - course: Bachelor of Technology in Electrical Engineering
+    institution: Indian Instritute of Technology, Kanpur
+    year: 2004
 email: ""
 interests:
-- Artificial Intelligence
-- Computational Linguistics
-- Information Retrieval
+- Data Science and Machine Learning
+- Data Visualization
+- Semiconductor Technology Development
+
 organizations:
-- name: Stanford University
+- name: Apple
   url: ""
-role: Professor of Artificial Intelligence
+role: Data Scientist
 social:
 - icon: envelope
   icon_pack: fas
-  link: '#contact'
-- icon: twitter
-  icon_pack: fab
-  link: https://twitter.com/GeorgeCushen
+  link: mailto://seshadri.kolluri@gmail.com
 - icon: google-scholar
   icon_pack: ai
-  link: https://scholar.google.co.uk/citations?user=sIwtMXoAAAAJ
+  link: https://scholar.google.co.uk/citations?user=O-2tQYsAAAAJ
 - icon: github
   icon_pack: fab
-  link: https://github.com/gcushen
+  link: https://github.com/SeshadriKolluri
 superuser: true
-title: Nelson Bighetti
+title: Seshadri Kolluri
 user_groups:
 - Researchers
 - Visitors
 ---
 
-Nelson Bighetti is a professor of artificial intelligence at the Stanford AI Lab. His research interests include distributed robotics, mobile computing and programmable matter. He leads the Robotic Neurobiology group, which develops self-reconfiguring robots, systems of self-organizing robots, and mobile sensor networks.
+I am currently working as a Data Scientist at [Apple](https://apple.com). In my previous life, I worked on developing Gallium Nitride FETs at [Texas Instruments](https://ti.com) and [Efficient Power Conversion](https://epc-co.com/epc).
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed neque elit, tristique placerat feugiat ac, facilisis vitae arcu. Proin eget egestas augue. Praesent ut sem nec arcu pellentesque aliquet. Duis dapibus diam vel metus tempus vulputate.
+This website is for my notes on various things, and some weekend projects. 
