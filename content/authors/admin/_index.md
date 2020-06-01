@@ -20,9 +20,9 @@ interests:
 - Computational Linguistics
 - Information Retrieval
 organizations:
-- name: Apple
+- name: Stanford University
   url: ""
-role: Data Scientist
+role: Professor of Artificial Intelligence
 social:
 - icon: envelope
   icon_pack: fas
@@ -37,7 +37,7 @@ social:
   icon_pack: fab
   link: https://github.com/gcushen
 superuser: true
-title: Seshadri Kolluri
+title: Nelson Bighetti
 user_groups:
 - Researchers
 - Visitors
