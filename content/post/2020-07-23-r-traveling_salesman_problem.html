@@ -1,0 +1,56 @@
+---
+title: "Traveling Salesman Problem - Understanding through Visualization"
+author: "Seshadri Kolluri"
+date: 2020-07-23
+categories: ["R"]
+tags: ["R Markdown", "Optimization"]
+math: TRUE
+---
+
+
+
+<p><a href="https://en.wikipedia.org/wiki/Travelling_salesman_problem">Traveling Salesman Problem</a> asks the following question: Given a list of cities and distances between them, how do you determine a path that connects all the cities, while minimizing the total distance traveled ?</p>
+<p>This is one of the most popular problems in Combinatorial Optimization, and has wide range of applications in trip planning, logistics, and signal routing in micro-electronic fabrication etc.</p>
+<p>In this post, we explore how to develop an intuitive understanding of such problems using visualizations. The main content for this post originally developed during a Kaggle Competition in 2018. The <a href="https://www.kaggle.com/seshadrikolluri/understanding-the-problem-and-some-sample-paths">Kaggle Notebook</a> has the code for computing the paths visualized in this post, and some earlier versions of these visualizations.</p>
+<div id="overview-of-the-data" class="section level2">
+<h2>Overview of the Data</h2>
+<p>In this implementation of the problem, the <a href="https://www.kaggle.com/c/traveling-santa-2018-prime-paths/data">data</a> was provided as a list of cities with X and Y coordinates. Our goal is to figure out a path for Santa Claus to cover all the cities with minimum distance traveled.</p>
+<p><img src="/tsp/cities.png" style="width:30.0%" /></p>
+<p>To our delight, the organizers of the problem arranged all the cities in a nice reindeer pattern !</p>
+<p><img src="/tsp/point_plot.png" style="width:80.0%" /></p>
+<p>In this problem, all the cities nicely form a reindeer pattern !</p>
+</div>
+<div id="simplest-path-following-the-cities-in-a-random-order" class="section level2">
+<h2>Simplest Path: Following the cities in a random order</h2>
+<p>Our first guess is the simplest path which covers all the cities in the order they are listed. We can see from the picture below that this path is very inefficient. It actually takes about 446 million miles to cover all the cities using this path.</p>
+<p><img src="/tsp/random_path3.gif" style="width:100.0%" /></p>
+<p>As we can see, the following cities in the order of CityId is very inefficient. Let’s sort them by X and Y, and see if we can get a better path.</p>
+</div>
+<div id="iteration-2-sorting-the-cities-by-x-and-y" class="section level2">
+<h2>Iteration 2: Sorting the cities by X and Y</h2>
+<p>A Sorted City Path moves in orderly from left to right. There are still many unnecessary up-down trips. Using this path, the total distance traveled is cut in about half as shown later in this post.</p>
+<p><img src="/tsp/sorted_path.gif" style="width:100.0%" /></p>
+</div>
+<div id="iteration-3-sorted-cities-within-a-grid-of-squares" class="section level2">
+<h2>Iteration 3 : Sorted cities within a grid of squares</h2>
+<p>One of the problems we can see with the previous path is that though Santa is moving in a systematic left-to-right fashion, he is moving between the extremes of the Y-axis while doing that.</p>
+<p>If we divide the the whole network into a grid of X’s and Y’s, then Santa can cover each square in the grid, before moving on to the next square. It should be more efficient as shown below.</p>
+<p>We go one step further, and cover the grid cells in an alternating fashion, so that we go up in one column of the grid, and come down in the next column, to cut-down some more long trips.</p>
+<p><img src="/tsp/zigzag_path.gif" style="width:100.0%" /></p>
+<p>With the alternating grid path, we see a substantial reduction in the distance (196 million to 2 million miles) as shown in the figure towards the end.</p>
+</div>
+<div id="further-improvement-nearest-neighbor-path" class="section level2">
+<h2>Further improvement: Nearest Neighbor Path</h2>
+<p>If we look at our approach so far, we have been trying to eliminate any unnecessary long trips and are trying to cover all the near by cities at any time during the travel. A natural extension to this approach would be to use a <strong>Nearest Neighbor</strong> algorithm, where we try to go from one city to the city nearest to that city and follow this procedure to the end.</p>
+<p>The following is an animation of the first few cities in the nearest neighbor path.</p>
+<p><img src="/tsp/nearest_neighbor_path_2.gif" style="width:100.0%" /></p>
+<p>When the full nearest neighbor path is implemented, we can see our familiar reindeer pattern as shown below.</p>
+<p><img src="/tsp/nearest_neighbor.png" style="width:100.0%" /></p>
+</div>
+<div id="results-comparison-of-different-paths" class="section level2">
+<h2>Results: Comparison of different paths</h2>
+<p>As illustrated in the figure below, we can see that we were able to improve the total distance traveled from 447 million miles to 1.8 million miles (alternating grid path), just using an intuitive understanding and visualization of the problem. More advanced heuristics and optimization techniques improve the results further, but not by a lot.</p>
+<p>Even the <a href="https://www.kaggle.com/c/traveling-santa-2018-prime-paths/leaderboard">winning solution in the competition</a> was only better by about 16% compared to our nearest neighbor solution.</p>
+<p><img src="/tsp/distances.png" style="width:100.0%" /></p>
+<p>In conclusion, we explored different solutions to traveling salesman problem using first principles and visualization, and achieved results within 20% of very well optimized techniques.</p>
+</div>
