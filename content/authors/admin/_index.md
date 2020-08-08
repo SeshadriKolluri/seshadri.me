@@ -15,8 +15,8 @@ education:
     year: 2004
 email: ""
 interests:
-- Data Science and Machine Learning
-- Data Visualization
+- Data Science and Visualization
+- Machine Learning
 - Semiconductor Technology Development
 
 organizations:
