@@ -1,0 +1,91 @@
+---
+title: "Monty Hall problem: Understanding & Simulation in R"
+author: "Seshadri Kolluri"
+date: 2017-11-18
+categories: ["R"]
+tags: ["R Markdown", "Probability"]
+math: TRUE
+---
+
+
+
+<p>I first learnt about (<a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">Monty Hall Problem</a>) a few years ago, but never got around to understand how its solution worked. Today, I stumbled up on a reference to it again, and wanted to understand it intuitively, without googling the solutions. Here is what I got.</p>
+<div id="problem-description" class="section level3">
+<h3>Problem Description:</h3>
+<p>The problem describes a game show where there are three doors, there is winning choice (a car in the wikipedia example) behind one door, and there are two losing choices (goats in the wikipedia example) behind the other doors.</p>
+<p>The rules of the game are as the following.</p>
+<ul>
+<li>You first choose a door and let the host know.</li>
+<li>The host knows which doors have the goats, and opens one of the doors that you have not chosen to reveal a goat.</li>
+<li>You now have the option of sticking with your original choice or changing your choice to the other remaining door.</li>
+</ul>
+<p>The question is whether you are better off sticking to your original choice, or switching to the remaining door as your new choice, or if it doesn’t matter.</p>
+</div>
+<div id="solution" class="section level3">
+<h3>Solution:</h3>
+<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But the right answer is that you are better of changing your choice to the other door.</p>
+<p>I took a “frequentist” approach, and tried to understand the outcomes for the two cases when you repeat this experiment 999 times.</p>
+<ul>
+<li>Let us assume we repeat this experiment 999 times and each time one of the three doors (chosen at random, with uniform probability among the three doors) contains the car, the other two doors contain goats.</li>
+<li>So when we look at 999 runs of the experiments, Door 1 is expected to contain the car 333 times, goats 666 times. The same is the case for Door 2, and Door 3.</li>
+<li>Assume we choose Door 1 in the beginning, and the host opens either Door 2 or Door 3 to reveal a goat.</li>
+<li><strong>Strategy 1: When we don’t change the choice</strong>, we already estimated that the Door is expected to contain the car for 333 out of 999 times, so the winning probability is 1/3.</li>
+<li><strong>Strategy 2: When we change the choice</strong>, we always choose the remaining door as our final choice.
+<ul>
+<li>In this case, the counting becomes easier if we imagine both Door 2 and Door 3 as one bigger unit, and we are changing our choice ot whiever door is remaining in this unit, after the host opened one dooor in this unit and revealed the goat.</li>
+<li>For the total 999 runs, the bigger unit (2 doors together) is expected to contain 2 x 666 goats, and 2 x 333 goats.</li>
+<li>If the host opens one of the doors in the unit, and lets out a goat in each round, he would have let out 999 goats in total. So, by choosing the other door, we are choosing among 2 x 666 - 999 = 333 goats, and 2 x 333 = 666 cars. Hence, the winning probability in this case is 666 / 999 = 2/3.</li>
+</ul></li>
+<li>Hence, we can see that we are better off changing the choice to other door (the one other than our initial choice, and the one that the host opened). The winning probability in that case increases from 33% to 66%.</li>
+</ul>
+</div>
+<div id="simualtion-of-the-problem-in-r" class="section level3">
+<h3>Simualtion of the problem in R:</h3>
+<p>To verify the logic, we will try to simulate the problem in R and see if are really better off by always changing our choice.</p>
+<pre class="r"><code>library(plyr)
+
+# number of runs
+n &lt;- 9999
+
+# make a dataframe containing three columns called door1, door2, door3. 
+# Each row should contain two &quot;goat&quot;s and one &quot;car&quot;, randomly distributed among three columns
+set.seed(123)
+car_positions &lt;- sample(1:3,n,replace = TRUE)
+
+# run the experiment chosen number of times
+experiment_runs &lt;- ldply(car_positions, function(x) ifelse(1:3 == x,&quot;car&quot;,&quot;goat&quot;))
+names(experiment_runs) &lt;- c(&quot;Door1&quot;, &quot;Door2&quot;, &quot;Door3&quot;)
+
+# Display the the first few rows of the dataframe, showing random distribution of the cars
+head(experiment_runs)</code></pre>
+<pre><code>##   Door1 Door2 Door3
+## 1  goat  goat   car
+## 2  goat  goat   car
+## 3  goat  goat   car
+## 4  goat   car  goat
+## 5  goat  goat   car
+## 6  goat   car  goat</code></pre>
+<pre class="r"><code># Choose initial choice at random
+initial_choices &lt;- sample(1:3,n,replace = TRUE)
+
+# The doors opened by host. 
+# Assume that he will open the door with the smallest number that is not the initial choice, and has a goat
+doors_opened_by_host &lt;- mapply(function(car_position,initial_choice) 
+  (1:3)[((1:3) != car_position) &amp; ((1:3) != initial_choice)][1],
+  car_positions, initial_choices)
+
+# alternate_choice
+alternate_choices &lt;- mapply(function(door_opened,initial_choice) 
+  (1:3)[((1:3) != door_opened) &amp; ((1:3) != initial_choice)][1], 
+  doors_opened_by_host, initial_choices)
+
+# Probability of winning with original choice
+print(paste0(&quot;Probability of winning with original choice is: &quot;, 
+             format(sum(car_positions == initial_choices)/n, digits = 3)))</code></pre>
+<pre><code>## [1] &quot;Probability of winning with original choice is: 0.328&quot;</code></pre>
+<pre class="r"><code># Probability of winning after changing the choice after the host reveals a door with a goat
+print(paste0(&quot;Probability of winning after changing the choice is: &quot;, 
+             format(sum(car_positions == alternate_choices)/n, digits = 3)))</code></pre>
+<pre><code>## [1] &quot;Probability of winning after changing the choice is: 0.672&quot;</code></pre>
+<p>It can be seen from the above simulation that the better winning strategy is to <strong>change the selection</strong> after the host reveals a door with a goat.</p>
+</div>

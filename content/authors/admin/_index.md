@@ -35,4 +35,4 @@ user_groups:
 
 I am currently working as a Data Scientist at [Apple](https://apple.com). In my previous life, I worked on developing Gallium Nitride FETs at [Texas Instruments](https://ti.com) and [Efficient Power Conversion](https://epc-co.com/epc).
 
-This website is for my notes on various things, and some weekend projects. 
+This website is for my notes on various things, and some weekend projects. All opinions expressed here are my own and are subject to change :) 
