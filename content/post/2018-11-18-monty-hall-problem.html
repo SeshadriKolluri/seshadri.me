@@ -1,17 +1,17 @@
 ---
-title: "Monty Hall problem: Understanding & Simulation in R"
+title: "Monty Hall problem: Understanding & Visualization"
 author: "Seshadri Kolluri"
-date: 2017-11-18
+date: 2018-11-18
 categories: ["Blog"]
-tags: ["R Markdown", "Probability"]
+tags: ["Visualization", "Probability", "R"]
 math: TRUE
 ---
 
 
 
-<p>I first learnt about (<a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">Monty Hall Problem</a>) a few years ago, but never got around to understand how its solution worked. Today, I stumbled up on a reference to it again, and wanted to understand it intuitively, without googling the solutions. Here is what I got.</p>
-<div id="problem-description" class="section level3">
-<h3>Problem Description:</h3>
+<p><a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">Monty Hall Problem</a> is one of the most popular probability puzzles. In this post, we explore the intuition behind the problem</p>
+<div id="problem-description" class="section level2">
+<h2>Problem Description:</h2>
 <p>The problem describes a game show where there are three doors, there is winning choice (a car in the wikipedia example) behind one door, and there are two losing choices (goats in the wikipedia example) behind the other doors.</p>
 <p>The rules of the game are as the following.</p>
 <ul>
@@ -21,9 +21,10 @@ math: TRUE
 </ul>
 <p>The question is whether you are better off sticking to your original choice, or switching to the remaining door as your new choice, or if it doesn’t matter.</p>
 </div>
-<div id="solution" class="section level3">
-<h3>Solution:</h3>
-<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But the right answer is that you are better of changing your choice to the other door.</p>
+<div id="solution" class="section level2">
+<h2>Solution:</h2>
+<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way.</p>
+<p><strong>Frequentist Approach</strong>:</p>
 <p>I took a “frequentist” approach, and tried to understand the outcomes for the two cases when you repeat this experiment 999 times.</p>
 <ul>
 <li>Let us assume we repeat this experiment 999 times and each time one of the three doors (chosen at random, with uniform probability among the three doors) contains the car, the other two doors contain goats.</li>
@@ -38,7 +39,6 @@ math: TRUE
 </ul></li>
 <li>Hence, we can see that we are better off changing the choice to other door (the one other than our initial choice, and the one that the host opened). The winning probability in that case increases from 33% to 66%.</li>
 </ul>
-</div>
 <div id="simualtion-of-the-problem-in-r" class="section level3">
 <h3>Simualtion of the problem in R:</h3>
 <p>To verify the logic, we will try to simulate the problem in R and see if are really better off by always changing our choice.</p>
@@ -88,4 +88,5 @@ print(paste0(&quot;Probability of winning after changing the choice is: &quot;,
              format(sum(car_positions == alternate_choices)/n, digits = 3)))</code></pre>
 <pre><code>## [1] &quot;Probability of winning after changing the choice is: 0.672&quot;</code></pre>
 <p>It can be seen from the above simulation that the better winning strategy is to <strong>change the selection</strong> after the host reveals a door with a goat.</p>
+</div>
 </div>

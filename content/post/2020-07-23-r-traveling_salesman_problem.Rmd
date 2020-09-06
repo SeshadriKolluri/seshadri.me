@@ -1,9 +1,9 @@
 ---
-title: "Traveling Salesman Problem - Understanding through Visualization"
+title: "Visualizing Traveling Salesman Problem"
 author: "Seshadri Kolluri"
 date: 2020-07-23
 categories: ["Blog"]
-tags: ["R Markdown", "Optimization"]
+tags: ["Visualization", "Optimization"]
 math: TRUE
 ---
 

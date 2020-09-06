@@ -1,22 +1,14 @@
 ---
-title: "Monty Hall problem: Understanding & Simulation in R"
+title: "Monty Hall problem: Understanding & Visualization"
 author: "Seshadri Kolluri"
-date: 2017-11-18
+date: 2018-11-18
 categories: ["Blog"]
-tags: ["R Markdown", "Probability"]
+tags: ["Visualization", "Probability", "R"]
 math: TRUE
 ---
----
-title: "Three kids and an Xbox controller"
-subtitle: "A probability puzzle based on Monty Hall Problem"
-author: "Seshadri Kolluri"
-output: 
-  ioslides_presentation:
-    widescreen: TRUE
----
-I first learnt about ([Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem)) a few years ago, but never got around to understand how its solution worked. Today, I stumbled up on a reference to it again, and wanted to understand it intuitively, without googling the solutions. Here is what I got.
+[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. In this post, we explore the intuition behind the problem
 
-### Problem Description:
+## Problem Description:
 
 The problem describes a game show where there are three doors, there is winning choice (a car in the wikipedia example) behind one door, and there are two losing choices (goats in the wikipedia example) behind the other doors.
 
@@ -28,9 +20,11 @@ The rules of the game are as the following.
 
 The question is whether you are better off sticking to your original choice, or switching to the remaining door as your new choice, or if it doesn't matter.
 
-### Solution:
+## Solution:
 
-Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But the right answer is that you are better of changing your choice to the other door.
+Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way. 
+
+**Frequentist Approach**: 
 
 I took a "frequentist" approach, and tried to understand the outcomes for the two cases when you repeat this experiment 999 times.
 
