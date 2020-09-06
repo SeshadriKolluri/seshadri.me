@@ -2,7 +2,7 @@
 title: "Traveling Salesman Problem - Understanding through Visualization"
 author: "Seshadri Kolluri"
 date: 2020-07-23
-categories: ["R"]
+categories: ["Blog"]
 tags: ["R Markdown", "Optimization"]
 math: TRUE
 ---
