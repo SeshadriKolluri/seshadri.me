@@ -32,11 +32,13 @@ The question is whether you are better off sticking to your **Original Choice**,
 
 ### Solution:
 
-Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way. 
+Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door that doesn't contain the prize. But, let us try to arrive at the answer in a more careful way. 
 
+We start with a frequentist approach where we repeat the experiment 30 times, and see how many successes we have with each approach. 
 
+We use `R programming language` to  simulate the experiment 30 times, and we use the plots to understand the results. You can `see the code by clicking on the code button` below. 
 
-```{r}
+```{r data-generation}
 set.seed(2020)
 
 # number of runs
@@ -69,7 +71,11 @@ df_experiment_runs_long <- pivot_longer(df_experiment_runs, cols = starts_with("
 df_experiment_runs_long$Door <- gsub('Door', '', df_experiment_runs_long$Door)
 ```
 
-```{r}
+#### 1. Prize locations chosen at random:
+
+First, let us denote the Prize Locations in each of the 30 runs by a **dot (.)**, which is chosen randomly among the 3 doors. 
+
+```{r prize-location}
 p0 <- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) + 
       geom_tile(fill = 'white', color = 'gray40') + 
       scale_y_continuous(expand = expansion(0,0)) + 
@@ -83,49 +89,74 @@ p0 <- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) +
 p1 <- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = 'Prize Locations')
 
+ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h')
+
+```
+
+
+#### 2. Original door choice chosen at random:
+
+Then, let us show the original choice of the doors, denoted by gray square (`r knitr::asis_output("\U25FD")`), which are also shown at random. 
+
+```{r original-choice}
 p2 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = 'gray80', color = 'gray40')+ 
         labs(subtitle = 'Original Choice')
-
-p3 <- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
-        labs(subtitle = 'Original Choice\n+\nPrize Location')
-
-p4 <- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40')
-
-p5 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40') + 
-          geom_tile(data = df_experiment_runs, aes(x = `Alternate Choice`), fill = 'bisque', color = 'gray40') + 
-          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
-
-# ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h')
-
-```
-
-#### First, let us denote the Prize Locations in each of the 30 runs by a dot, which is chosen randomly among the 3 doors. 
-
-```{r}
-ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h')
-```
-
-#### Then, let us show the original choice of the doors, which are also shown at random. 
-
-```{r}
 ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = 'h')
 ```
 
-#### Then, let us show the original choice of the doors, which are also shown at random. 
+#### 3. Original choice combined with prize locations:
 
-```{r}
+When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a gray square with a dot in the picture below. 
+
+`Number of successes with original choice: number of gray squares with a dot`. 
+
+In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about 0.33 probability. 
+
+```{r original-choice-with-prize-location}
+p3 <- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+        labs(subtitle = 'Original Choice\n+\nPrize Location')
+
 ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h')
 ```
 
-#### Then, let us show the original choice of the doors, which are also shown at random. 
+#### 4. Eliminating one of the doors without the prize:
 
-```{r}
-ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h')
+At this point the host would eliminate one of the doors that don't contain the prize. We denote this eliminated choice by black square (`r knitr::asis_output("\U25FE")`).
+
+
+```{r eliminated-positions}
+p4 <- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40') + 
+        labs(subtitle = 'Original Choice\n+\nEliminated Choice')
+ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h') 
 ```
 
-#### Then, let us show the original choice of the doors, which are also shown at random. 
+#### 5. Considering the alternate choice:
 
-```{r}
+After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square in this picture. 
+
+`Number of successes with alternate choice: number of orange squares with a dot`. 
+
+We can see that there about 20 orange squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice. 
+
+```{r alternate-choice}
+p5 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40') + 
+          geom_tile(data = df_experiment_runs, aes(x = `Alternate Choice`), fill = 'bisque', color = 'gray40') + 
+          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+          labs(subtitle = 'Alternate Chocie\n+\nPrize Location')
+
 ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h')
+
 ```
+
+
+`So, changing our choice after the elimination of one of the doors, improved the sucess probability by about 2x.`
+
+
+### Discussion:
+
+The above example showed that we have twice the chance of succeeding by changing our initial choice. 
+
+To understand this further, we can imagine our initial choice as one unit, and the remaining two doors as another unit. The probability of having a prize in our initial choice is 0.33. So, the probability that the prize is one of the remaining two doors is 0.67. 
+
+`When the host eliminates one of the doors that doesn't contain the prize, he is effectively giving us a chance to choose two doors together`: one of the doors that doesn't contain the prize, and the other one which we didn't choose initially. So, the probability of the prize being in that unit of two doors together is 0.67. This is another way to understand this problem. 
 

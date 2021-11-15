@@ -24,7 +24,9 @@ math: TRUE
 </div>
 <div id="solution" class="section level3">
 <h3>Solution:</h3>
-<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way.</p>
+<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door that doesn’t contain the prize. But, let us try to arrive at the answer in a more careful way.</p>
+<p>We start with a frequentist approach where we repeat the experiment 30 times, and see how many successes we have with each approach.</p>
+<p>We use <code>R programming language</code> to simulate the experiment 30 times, and we use the plots to understand the results. You can <code>see the code by clicking on the code button</code> below.</p>
 <pre class="r"><code>set.seed(2020)
 
 # number of runs
@@ -55,6 +57,9 @@ df_experiment_runs$`Alternate Choice` &lt;- apply(
 
 df_experiment_runs_long &lt;- pivot_longer(df_experiment_runs, cols = starts_with(&quot;Door&quot;), names_to = &quot;Door&quot;)
 df_experiment_runs_long$Door &lt;- gsub(&#39;Door&#39;, &#39;&#39;, df_experiment_runs_long$Door)</code></pre>
+<div id="prize-locations-chosen-at-random" class="section level4">
+<h4>1. Prize locations chosen at random:</h4>
+<p>First, let us denote the Prize Locations in each of the 30 runs by a <strong>dot (.)</strong>, which is chosen randomly among the 3 doors.</p>
 <pre class="r"><code>p0 &lt;- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) + 
       geom_tile(fill = &#39;white&#39;, color = &#39;gray40&#39;) + 
       scale_y_continuous(expand = expansion(0,0)) + 
@@ -68,42 +73,54 @@ df_experiment_runs_long$Door &lt;- gsub(&#39;Door&#39;, &#39;&#39;, df_experimen
 p1 &lt;- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = &#39;Prize Locations&#39;)
 
-p2 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = &#39;gray80&#39;, color = &#39;gray40&#39;)+ 
+ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/prize-location-1.png" width="672" /></p>
+</div>
+<div id="original-door-choice-chosen-at-random" class="section level4">
+<h4>2. Original door choice chosen at random:</h4>
+<p>Then, let us show the original choice of the doors, denoted by gray square (◽), which are also shown at random.</p>
+<pre class="r"><code>p2 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = &#39;gray80&#39;, color = &#39;gray40&#39;)+ 
         labs(subtitle = &#39;Original Choice&#39;)
-
-p3 &lt;- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/original-choice-1.png" width="672" /></p>
+</div>
+<div id="original-choice-combined-with-prize-locations" class="section level4">
+<h4>3. Original choice combined with prize locations:</h4>
+<p>When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a gray square with a dot in the picture below.</p>
+<p><code>Number of successes with original choice: number of gray squares with a dot</code>.</p>
+<p>In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about 0.33 probability.</p>
+<pre class="r"><code>p3 &lt;- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = &#39;Original Choice\n+\nPrize Location&#39;)
 
-p4 &lt;- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;)
-
-p5 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
+ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/original-choice-with-prize-location-1.png" width="672" /></p>
+</div>
+<div id="eliminating-one-of-the-doors-without-the-prize" class="section level4">
+<h4>4. Eliminating one of the doors without the prize:</h4>
+<p>At this point the host would eliminate one of the doors that don’t contain the prize. We denote this eliminated choice by black square (◾).</p>
+<pre class="r"><code>p4 &lt;- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
+        labs(subtitle = &#39;Original Choice\n+\nEliminated Choice&#39;)
+ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;) </code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/eliminated-positions-1.png" width="672" /></p>
+</div>
+<div id="considering-the-alternate-choice" class="section level4">
+<h4>5. Considering the alternate choice:</h4>
+<p>After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square in this picture.</p>
+<p><code>Number of successes with alternate choice: number of orange squares with a dot</code>.</p>
+<p>We can see that there about 20 orange squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice.</p>
+<pre class="r"><code>p5 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
           geom_tile(data = df_experiment_runs, aes(x = `Alternate Choice`), fill = &#39;bisque&#39;, color = &#39;gray40&#39;) + 
-          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
+          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+          labs(subtitle = &#39;Alternate Chocie\n+\nPrize Location&#39;)
 
-# ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
-<div id="first-let-us-denote-the-prize-locations-in-each-of-the-30-runs-by-a-dot-which-is-chosen-randomly-among-the-3-doors." class="section level4">
-<h4>First, let us denote the Prize Locations in each of the 30 runs by a dot, which is chosen randomly among the 3 doors.</h4>
-<pre class="r"><code>ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
-<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/alternate-choice-1.png" width="672" /></p>
+<p><code>So, changing our choice after the elimination of one of the doors, improved the sucess probability by about 2x.</code></p>
 </div>
-<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random." class="section level4">
-<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
-<pre class="r"><code>ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
-<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 </div>
-<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-1" class="section level4">
-<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
-<pre class="r"><code>ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
-<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-</div>
-<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-2" class="section level4">
-<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
-<pre class="r"><code>ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
-<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-</div>
-<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-3" class="section level4">
-<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
-<pre class="r"><code>ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
-<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-</div>
+<div id="discussion" class="section level3">
+<h3>Discussion:</h3>
+<p>The above example showed that we have twice the chance of succeeding by changing our initial choice.</p>
+<p>To understand this further, we can imagine our initial choice as one unit, and the remaining two doors as another unit. The probability of having a prize in our initial choice is 0.33. So, the probability that the prize is one of the remaining two doors is 0.67.</p>
+<p><code>When the host eliminates one of the doors that doesn't contain the prize, he is effectively giving us a chance to choose two doors together</code>: one of the doors that doesn’t contain the prize, and the other one which we didn’t choose initially. So, the probability of the prize being in that unit of two doors together is 0.67. This is another way to understand this problem.</p>
 </div>
