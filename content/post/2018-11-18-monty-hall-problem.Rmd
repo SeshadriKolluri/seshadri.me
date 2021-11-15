@@ -26,7 +26,7 @@ The rules of the game are as the following.
 
 -   You first choose a door and let the host know. (**Original Choice**, `r knitr::asis_output("\U25FD")`).
 -   The host knows which door has the prize, and opens one of the the doors that don't have the prize behind them. This door is then eliminated. (**Eliminated Choice**, `r knitr::asis_output("\U25FE")`).
--   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('\U1F7E8')`).
+-   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`).
 
 The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after elimination as your new choice, or if it **doesn't matter**.
 
@@ -149,7 +149,7 @@ annotate_figure(
 
 #### 5. Considering the alternate choice:
 
-After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square in this picture. 
+After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`) in this picture. 
 
 `Number of successes with alternate choice: number of orange squares with a dot`. 
 

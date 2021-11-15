@@ -18,7 +18,7 @@ math: TRUE
 <ul>
 <li>You first choose a door and let the host know. (<strong>Original Choice</strong>, ◽).</li>
 <li>The host knows which door has the prize, and opens one of the the doors that don’t have the prize behind them. This door is then eliminated. (<strong>Eliminated Choice</strong>, ◾).</li>
-<li>You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (<strong>Alternate Choice</strong>, 🟨).</li>
+<li>You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (<strong>Alternate Choice</strong>, <span style="color:#FFE4C4">▦</span>).</li>
 </ul>
 <p>The question is whether you are better off sticking to your <strong>Original Choice</strong>, or switching to the <strong>Alternate Choice</strong> after elimination as your new choice, or if it <strong>doesn’t matter</strong>.</p>
 </div>
@@ -121,7 +121,7 @@ annotate_figure(
 </div>
 <div id="considering-the-alternate-choice" class="section level4">
 <h4>5. Considering the alternate choice:</h4>
-<p>After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square in this picture.</p>
+<p>After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square (<span style="color:#FFE4C4">▦</span>) in this picture.</p>
 <p><code>Number of successes with alternate choice: number of orange squares with a dot</code>.</p>
 <p>We can see that there about 20 orange squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice.</p>
 <pre class="r"><code>p5 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
