@@ -39,7 +39,7 @@ We start with a frequentist approach where we repeat the experiment 30 times, an
 We use `R programming language` to  simulate the experiment 30 times, and we use the plots to understand the results. You can `see the code by clicking on the code button` below. 
 
 ```{r data-generation}
-set.seed(2020)
+set.seed(2017)
 
 # number of runs
 n <- 30
