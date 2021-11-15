@@ -73,7 +73,11 @@ df_experiment_runs_long$Door &lt;- gsub(&#39;Door&#39;, &#39;&#39;, df_experimen
 p1 &lt;- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = &#39;Prize Locations&#39;)
 
-ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+annotate_figure(
+  ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;),
+  left = text_grob(&quot;Experiment Number&quot;, rot = 90, size = 12),
+  bottom = text_grob(&quot;Door Choice&quot;, size = 12, hjust = 0, x = 0.05)
+)</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/prize-location-1.png" width="672" /></p>
 </div>
 <div id="original-door-choice-chosen-at-random" class="section level4">
@@ -81,7 +85,11 @@ ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre
 <p>Then, let us show the original choice of the doors, denoted by gray square (◽), which are also shown at random.</p>
 <pre class="r"><code>p2 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = &#39;gray80&#39;, color = &#39;gray40&#39;)+ 
         labs(subtitle = &#39;Original Choice&#39;)
-ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+annotate_figure(
+  ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;),
+  left = text_grob(&quot;Experiment Number&quot;, rot = 90, size = 12),
+  bottom = text_grob(&quot;Door Choice&quot;, size = 12, hjust = 0, x = 0.15)
+)</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/original-choice-1.png" width="672" /></p>
 </div>
 <div id="original-choice-combined-with-prize-locations" class="section level4">
@@ -92,7 +100,11 @@ ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
 <pre class="r"><code>p3 &lt;- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = &#39;Original Choice\n+\nPrize Location&#39;)
 
-ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+annotate_figure(
+  ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;),
+  left = text_grob(&quot;Experiment Number&quot;, rot = 90, size = 12),
+  bottom = text_grob(&quot;Door Choice&quot;, size = 12, hjust = 0, x = 0.25)
+)</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/original-choice-with-prize-location-1.png" width="672" /></p>
 </div>
 <div id="eliminating-one-of-the-doors-without-the-prize" class="section level4">
@@ -100,7 +112,11 @@ ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
 <p>At this point the host would eliminate one of the doors that don’t contain the prize. We denote this eliminated choice by black square (◾).</p>
 <pre class="r"><code>p4 &lt;- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
         labs(subtitle = &#39;Original Choice\n+\nEliminated Choice&#39;)
-ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;) </code></pre>
+annotate_figure(
+  ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;),
+  left = text_grob(&quot;Experiment Number&quot;, rot = 90, size = 12),
+  bottom = text_grob(&quot;Door Choice&quot;, size = 12, hjust = 0, x = 0.35)
+)</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/eliminated-positions-1.png" width="672" /></p>
 </div>
 <div id="considering-the-alternate-choice" class="section level4">
@@ -113,7 +129,11 @@ ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;) </code></pre>
           geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
           labs(subtitle = &#39;Alternate Chocie\n+\nPrize Location&#39;)
 
-ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
+annotate_figure(
+  ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;),
+  left = text_grob(&quot;Experiment Number&quot;, rot = 90, size = 12),
+  bottom = text_grob(&quot;Door Choice&quot;, size = 12, hjust = 0, x = 0.45)
+)</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/alternate-choice-1.png" width="672" /></p>
 <p><code>So, changing our choice after the elimination of one of the doors, improved the sucess probability by about 2x.</code></p>
 </div>

@@ -89,7 +89,11 @@ p0 <- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) +
 p1 <- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = 'Prize Locations')
 
-ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h')
+annotate_figure(
+  ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h'),
+  left = text_grob("Experiment Number", rot = 90, size = 12),
+  bottom = text_grob("Door Choice", size = 12, hjust = 0, x = 0.05)
+)
 
 ```
 
@@ -101,7 +105,12 @@ Then, let us show the original choice of the doors, denoted by gray square (`r k
 ```{r original-choice}
 p2 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = 'gray80', color = 'gray40')+ 
         labs(subtitle = 'Original Choice')
-ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = 'h')
+annotate_figure(
+  ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = 'h'),
+  left = text_grob("Experiment Number", rot = 90, size = 12),
+  bottom = text_grob("Door Choice", size = 12, hjust = 0, x = 0.15)
+)
+
 ```
 
 #### 3. Original choice combined with prize locations:
@@ -116,7 +125,11 @@ In the plot below, we can say about 10 out of 30 trials result in a success wher
 p3 <- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
         labs(subtitle = 'Original Choice\n+\nPrize Location')
 
-ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h')
+annotate_figure(
+  ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h'),
+  left = text_grob("Experiment Number", rot = 90, size = 12),
+  bottom = text_grob("Door Choice", size = 12, hjust = 0, x = 0.25)
+)
 ```
 
 #### 4. Eliminating one of the doors without the prize:
@@ -127,7 +140,11 @@ At this point the host would eliminate one of the doors that don't contain the p
 ```{r eliminated-positions}
 p4 <- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40') + 
         labs(subtitle = 'Original Choice\n+\nEliminated Choice')
-ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h') 
+annotate_figure(
+  ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h'),
+  left = text_grob("Experiment Number", rot = 90, size = 12),
+  bottom = text_grob("Door Choice", size = 12, hjust = 0, x = 0.35)
+)
 ```
 
 #### 5. Considering the alternate choice:
@@ -144,8 +161,11 @@ p5 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), 
           geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
           labs(subtitle = 'Alternate Chocie\n+\nPrize Location')
 
-ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h')
-
+annotate_figure(
+  ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h'),
+  left = text_grob("Experiment Number", rot = 90, size = 12),
+  bottom = text_grob("Door Choice", size = 12, hjust = 0, x = 0.45)
+)
 ```
 
 
