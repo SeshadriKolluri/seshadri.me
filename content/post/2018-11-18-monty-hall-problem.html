@@ -1,0 +1,109 @@
+---
+title: "Monty Hall problem: Understanding & Visualization"
+author: "Seshadri Kolluri"
+date: 2018-11-18
+categories: ["Blog"]
+tags: ["Visualization", "Probability", "R"]
+math: TRUE
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p><a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">Monty Hall Problem</a> is one of the most popular probability puzzles. In this post, we explore the intuition behind the problem.</p>
+<div id="problem-description" class="section level3">
+<h3>Problem Description:</h3>
+<p>The problem describes a game show where there are three doors. One of the doors contains a prize behind the door, and the other two doors don’t have the prize behind them.</p>
+<p>The rules of the game are as the following.</p>
+<ul>
+<li>You first choose a door and let the host know. (<strong>Original Choice</strong>, ◽).</li>
+<li>The host knows which door has the prize, and opens one of the the doors that don’t have the prize behind them. This door is then eliminated. (<strong>Eliminated Choice</strong>, ◾).</li>
+<li>You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (<strong>Alternate Choice</strong>, 🟨).</li>
+</ul>
+<p>The question is whether you are better off sticking to your <strong>Original Choice</strong>, or switching to the <strong>Alternate Choice</strong> after elimination as your new choice, or if it <strong>doesn’t matter</strong>.</p>
+</div>
+<div id="solution" class="section level3">
+<h3>Solution:</h3>
+<p>Apparently an overwhelming majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way.</p>
+<pre class="r"><code>set.seed(2020)
+
+# number of runs
+n &lt;- 30
+
+# make a dataframe containing three columns called door1, door2, door3. 
+# Each row should contain two &quot;goat&quot;s and one &quot;car&quot;, randomly distributed among three columns
+
+car_positions &lt;- sample(1:3,n,replace = TRUE)
+
+# run the experiment chosen number of times
+df_experiment_runs &lt;- ldply(car_positions, function(x) ifelse(1:3 == x,&quot;car&quot;,&quot;goat&quot;))
+names(df_experiment_runs) &lt;- c(&quot;Door1&quot;, &quot;Door2&quot;, &quot;Door3&quot;)
+df_experiment_runs$`Run Number` &lt;- as.numeric(row.names(df_experiment_runs))
+df_experiment_runs$`First Choice` &lt;- sample(1:3, n, replace = TRUE)
+df_experiment_runs$`Prize Location` &lt;- car_positions
+df_experiment_runs$`Eliminated Position` &lt;- apply(
+    df_experiment_runs, MARGIN = 1, 
+    FUN = function(x) setdiff(1:3, c(x[&#39;Prize Location&#39;], x[&#39;First Choice&#39;]))[
+        sample(length(setdiff(1:3, c(x[&#39;Prize Location&#39;], x[&#39;First Choice&#39;]))), 1)]
+)
+
+df_experiment_runs$`Alternate Choice` &lt;- apply(
+    df_experiment_runs, MARGIN = 1, 
+    FUN = function(x) setdiff(1:3, c(x[&#39;Eliminated Position&#39;], x[&#39;First Choice&#39;]))[
+        sample(length(setdiff(1:3, c(x[&#39;Eliminated Position&#39;], x[&#39;First Choice&#39;]))), 1)]
+)
+
+df_experiment_runs_long &lt;- pivot_longer(df_experiment_runs, cols = starts_with(&quot;Door&quot;), names_to = &quot;Door&quot;)
+df_experiment_runs_long$Door &lt;- gsub(&#39;Door&#39;, &#39;&#39;, df_experiment_runs_long$Door)</code></pre>
+<pre class="r"><code>p0 &lt;- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) + 
+      geom_tile(fill = &#39;white&#39;, color = &#39;gray40&#39;) + 
+      scale_y_continuous(expand = expansion(0,0)) + 
+      scale_x_discrete(expand = expansion(0,0)) + 
+      coord_equal() +
+      theme_bw() + 
+      theme(legend.position = &#39;none&#39;, 
+            axis.title = element_blank(),
+            plot.subtitle = element_text(hjust = 0.5))
+
+p1 &lt;- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+        labs(subtitle = &#39;Prize Locations&#39;)
+
+p2 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = &#39;gray80&#39;, color = &#39;gray40&#39;)+ 
+        labs(subtitle = &#39;Original Choice&#39;)
+
+p3 &lt;- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+        labs(subtitle = &#39;Original Choice\n+\nPrize Location&#39;)
+
+p4 &lt;- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;)
+
+p5 &lt;- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = &#39;gray30&#39;, color = &#39;gray40&#39;) + 
+          geom_tile(data = df_experiment_runs, aes(x = `Alternate Choice`), fill = &#39;bisque&#39;, color = &#39;gray40&#39;) + 
+          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
+
+# ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
+<div id="first-let-us-denote-the-prize-locations-in-each-of-the-30-runs-by-a-dot-which-is-chosen-randomly-among-the-3-doors." class="section level4">
+<h4>First, let us denote the Prize Locations in each of the 30 runs by a dot, which is chosen randomly among the 3 doors.</h4>
+<pre class="r"><code>ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random." class="section level4">
+<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
+<pre class="r"><code>ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-1" class="section level4">
+<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
+<pre class="r"><code>ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-2" class="section level4">
+<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
+<pre class="r"><code>ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="then-let-us-show-the-original-choice-of-the-doors-which-are-also-shown-at-random.-3" class="section level4">
+<h4>Then, let us show the original choice of the doors, which are also shown at random.</h4>
+<pre class="r"><code>ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = &#39;h&#39;)</code></pre>
+<p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+</div>

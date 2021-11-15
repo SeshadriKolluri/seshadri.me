@@ -1,0 +1,131 @@
+---
+title: "Monty Hall problem: Understanding & Visualization"
+author: "Seshadri Kolluri"
+date: 2018-11-18
+categories: ["Blog"]
+tags: ["Visualization", "Probability", "R"]
+math: TRUE
+---
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(plyr)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+```
+
+[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. In this post, we explore the intuition behind the problem. 
+
+### Problem Description:
+
+The problem describes a game show where there are three doors. One of the doors contains a prize behind the door, and the other two doors don't have the prize behind them.  
+
+The rules of the game are as the following.
+
+-   You first choose a door and let the host know. (**Original Choice**, `r knitr::asis_output("\U25FD")`).
+-   The host knows which door has the prize, and opens one of the the doors that don't have the prize behind them. This door is then eliminated. (**Eliminated Choice**, `r knitr::asis_output("\U25FE")`).
+-   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('\U1F7E8')`).
+
+The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after elimination as your new choice, or if it **doesn't matter**.
+
+### Solution:
+
+Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, or 50% chance of success after you eliminate a door with the goat. But, let us try to arrive at the answer in a more careful way. 
+
+
+
+```{r}
+set.seed(2020)
+
+# number of runs
+n <- 30
+
+# make a dataframe containing three columns called door1, door2, door3. 
+# Each row should contain two "goat"s and one "car", randomly distributed among three columns
+
+car_positions <- sample(1:3,n,replace = TRUE)
+
+# run the experiment chosen number of times
+df_experiment_runs <- ldply(car_positions, function(x) ifelse(1:3 == x,"car","goat"))
+names(df_experiment_runs) <- c("Door1", "Door2", "Door3")
+df_experiment_runs$`Run Number` <- as.numeric(row.names(df_experiment_runs))
+df_experiment_runs$`First Choice` <- sample(1:3, n, replace = TRUE)
+df_experiment_runs$`Prize Location` <- car_positions
+df_experiment_runs$`Eliminated Position` <- apply(
+    df_experiment_runs, MARGIN = 1, 
+    FUN = function(x) setdiff(1:3, c(x['Prize Location'], x['First Choice']))[
+        sample(length(setdiff(1:3, c(x['Prize Location'], x['First Choice']))), 1)]
+)
+
+df_experiment_runs$`Alternate Choice` <- apply(
+    df_experiment_runs, MARGIN = 1, 
+    FUN = function(x) setdiff(1:3, c(x['Eliminated Position'], x['First Choice']))[
+        sample(length(setdiff(1:3, c(x['Eliminated Position'], x['First Choice']))), 1)]
+)
+
+df_experiment_runs_long <- pivot_longer(df_experiment_runs, cols = starts_with("Door"), names_to = "Door")
+df_experiment_runs_long$Door <- gsub('Door', '', df_experiment_runs_long$Door)
+```
+
+```{r}
+p0 <- ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) + 
+      geom_tile(fill = 'white', color = 'gray40') + 
+      scale_y_continuous(expand = expansion(0,0)) + 
+      scale_x_discrete(expand = expansion(0,0)) + 
+      coord_equal() +
+      theme_bw() + 
+      theme(legend.position = 'none', 
+            axis.title = element_blank(),
+            plot.subtitle = element_text(hjust = 0.5))
+
+p1 <- p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+        labs(subtitle = 'Prize Locations')
+
+p2 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `First Choice`), fill = 'gray80', color = 'gray40')+ 
+        labs(subtitle = 'Original Choice')
+
+p3 <- p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) + 
+        labs(subtitle = 'Original Choice\n+\nPrize Location')
+
+p4 <- p3 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40')
+
+p5 <- p0 + geom_tile(data = df_experiment_runs, aes(x = `Eliminated Position`), fill = 'gray30', color = 'gray40') + 
+          geom_tile(data = df_experiment_runs, aes(x = `Alternate Choice`), fill = 'bisque', color = 'gray40') + 
+          geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
+
+# ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h')
+
+```
+
+#### First, let us denote the Prize Locations in each of the 30 runs by a dot, which is chosen randomly among the 3 doors. 
+
+```{r}
+ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h')
+```
+
+#### Then, let us show the original choice of the doors, which are also shown at random. 
+
+```{r}
+ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = 'h')
+```
+
+#### Then, let us show the original choice of the doors, which are also shown at random. 
+
+```{r}
+ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h')
+```
+
+#### Then, let us show the original choice of the doors, which are also shown at random. 
+
+```{r}
+ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h')
+```
+
+#### Then, let us show the original choice of the doors, which are also shown at random. 
+
+```{r}
+ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h')
+```
+
