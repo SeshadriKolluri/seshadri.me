@@ -22,9 +22,9 @@ library(kableExtra)
 
 The rules of the game are as the following.
 
--   You first choose a door and let the host know. (**Original Choice**, `r knitr::asis_output("\U25FD")`).
--   The host knows which door has the prize, and opens one of the the doors that don't have the prize behind them. This door is then eliminated. (**Eliminated Choice**, `r knitr::asis_output("\U25FE")`).
--   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`).
+-   You first choose a door and let the host know. (**Original Choice**, `r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`).
+-   The host knows which door has the prize, and opens one of the the doors that don't have the prize behind them. This door is then eliminated. (**Eliminated Choice**, `r knitr::asis_output("\U25FD")`).
+-   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`).
 
 The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after the elimination, or if it **doesn't matter**.
 
@@ -49,7 +49,7 @@ set.seed(2017)
 # number of runs
 n <- 30
 
-# make a dataframe containing three columns called door1, door2, door3.
+# make a data frame containing three columns called door1, door2, door3.
 # Each row should contain two "goat"s and one "car", randomly distributed
 # among three columns
 
@@ -99,9 +99,9 @@ df_legend <-
     Choices = c(
       "Prize Location",
       "Original Choice",
-      "Winning Original Choice",
       "Eliminated Choice",
-      "Alternate Choice"
+      "Winning\nOriginal Choice",
+      "Winning\nAlternate Choice"
     )
   )
 df_legend$Choices <- fct_inorder(df_legend$Choices)
@@ -114,8 +114,8 @@ get_legend_plot <- function(df) {
               height = 1) +
     coord_cartesian(ylim = c(0, 2)) +
     facet_grid(~ Choices, scales = 'free') +
-    geom_point(data = df %>% filter(grepl("Prize Location|Winning", Choices)), size = 0.5) +
-    scale_fill_manual(values = c('white', 'gray80', 'gray80', 'gray30', 'bisque')) +
+    geom_point(data = df %>% filter(grepl("Prize Location|Winning", Choices)), size = 1) +
+    scale_fill_manual(values = c("Prize Location" = 'white', "Original Choice" = 'bisque', "Eliminated Choice" = 'gray60', "Winning\nOriginal Choice" = 'bisque', "Winning\nAlternate Choice" = 'lightskyblue')) +
     theme_void() +
     
     theme(
@@ -131,8 +131,10 @@ get_legend_plot <- function(df) {
 First, let us denote the Prize Locations in each of the 30 runs by a **dot (.)**, which is chosen randomly among the 3 doors. 
 
 ```{r prize-location}
-p0 <-
-  ggplot(df_experiment_runs_long, aes(y = `Run Number`, x = Door)) +
+get_permutation_grid <- function(df){
+  df_all_combinations <- expand.grid(`Run Number` = (1:nrow(df)), Door = (1:3)) 
+  
+  ggplot(df_all_combinations, aes(y = `Run Number`, x = Door)) +
   geom_tile(fill = 'white', color = 'gray40') +
   scale_y_continuous(expand = expansion(0, 0)) +
   scale_x_discrete(expand = expansion(0, 0)) +
@@ -143,9 +145,13 @@ p0 <-
     axis.title = element_blank(),
     plot.subtitle = element_text(hjust = 0.5)
   )
+}
+
+p0 <- get_permutation_grid(df_experiment_runs)
+
 
 p1 <-
-  p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) +
+  p0 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 1) +
   # labs(subtitle = 'Prize Locations') +
   NULL
 
@@ -181,19 +187,17 @@ annotate_figure(
 
 #### 2. Original door choice chosen at random:
 
-Then, let us show the original choice of the doors, denoted by gray square (`r knitr::asis_output("\U25FD")`), which are also shown at random. 
+Then, let us show the original choice of the doors, denoted by orange square (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`), which are also shown at random. 
 
 ```{r original-choice}
 p2 <-
   p0 + geom_tile(
     data = df_experiment_runs,
     aes(x = `First Choice`),
-    fill = 'gray80',
+    fill = 'bisque',
     color = 'gray40'
-  ) #+
-# labs(subtitle = 'Original Choice')
+  ) 
 annotate_figure(
-  # ggarrange(p1,     p2, get_legend_plot(head(df_legend,2)), NULL, NULL, nrow = 1, align = 'h'),
   ggarrange(
     ggarrange(
       get_legend_plot(head(df_legend, 2)),
@@ -220,22 +224,20 @@ annotate_figure(
 
 #### 3. Original choice combined with prize locations:
 
-When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a gray square with a dot in the picture below. 
+When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a orange square with a dot in the picture below. 
 
-`Number of successes with original choice: number of gray squares with a dot`. 
+`Number of successes with original choice: number of orange squares with a dot`. 
 
 In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about 0.33 probability. 
 
 ```{r original-choice-with-prize-location}
 p3 <-
-  p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) #+
-#labs(subtitle = 'Original Choice\n+\nPrize Location')
+  p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
 
 annotate_figure(
-  # ggarrange(p1, p2, p3, get_legend_plot(head(df_legend,3)), NULL, nrow = 1, align = 'h'),
   ggarrange(
     ggarrange(
-      get_legend_plot(head(df_legend, 3)),
+      get_legend_plot(df_legend[c(1,2,4),]),
       NULL,
       widths = c(0.6, 0.4),
       nrow = 1,
@@ -258,7 +260,7 @@ annotate_figure(
 
 #### 4. Eliminating one of the doors without the prize:
 
-At this point the host would eliminate one of the doors that don't contain the prize. We denote this eliminated choice by black square (`r knitr::asis_output("\U25FE")`).
+At this point the host would eliminate one of the doors that don't contain the prize. We denote this eliminated choice by gray square (`r knitr::asis_output("\U25FD")`).
 
 
 ```{r eliminated-positions}
@@ -266,7 +268,7 @@ p4 <-
   p3 + geom_tile(
     data = df_experiment_runs,
     aes(x = `Eliminated Position`),
-    fill = 'gray30',
+    fill = 'gray60',
     color = 'gray40'
   ) #+
 #labs(subtitle = 'Original Choice\n+\nEliminated Choice')
@@ -297,24 +299,30 @@ annotate_figure(
 
 #### 5. Considering the alternate choice:
 
-After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the orange square (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`) in this picture. 
+After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the blue square (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`) in this picture. 
 
-`Number of successes with alternate choice: number of orange squares with a dot`. 
+`Number of successes with alternate choice: number of blue squares with a dot`. 
 
-We can see that there about 20 orange squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice. 
+We can see that there about 20 blue squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice. 
 
 ```{r alternate-choice}
 p5 <-
   p0 + geom_tile(
     data = df_experiment_runs,
     aes(x = `Eliminated Position`),
-    fill = 'gray30',
+    fill = 'gray60',
+    color = 'gray40'
+  ) +
+  geom_tile(
+    data = df_experiment_runs,
+    aes(x = `First Choice`),
+    fill = 'bisque',
     color = 'gray40'
   ) +
   geom_tile(
     data = df_experiment_runs,
     aes(x = `Alternate Choice`),
-    fill = 'bisque',
+    fill = 'lightskyblue',
     color = 'gray40'
   ) +
   geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) #+
@@ -345,6 +353,170 @@ annotate_figure(
 
 Though the previous simulations make sense, they do not provide a definitive proof that switching our door choice would increase our probability of success to 2/3. As a matter of fact, there could be a different set of 30 simulation runs, where the results could be the opposite of what we got (though less likely). So, in this section we try to provide more rigorous permutations-based calculations to get these probabilities. 
 
-(Work in Progress, To be continued ... )
+
+First, the host 3 doors to choose from for placing the prize, and we have 3 doors to choose from for our initial choice. As shown below, we have total 9 possible permutations, each having an equal probability of 9. 
+
+```{r permutation-data, message=F, warning=F, error=F}
+
+permutation_data <- expand.grid(
+  `Prize Location` = (1:3),
+  `First Choice` = (1:3),
+  `Eliminated Position` = (1:3)
+) %>% filter((`Eliminated Position` != `Prize Location`) &
+               (`Eliminated Position` != `First Choice`)) %>% 
+  arrange(`Prize Location`, `First Choice`)
+
+get_unique_permutations <- function(df, column_list) {
+  df_permutations <-
+    df %>% distinct(across(all_of(column_list)))
+  df_permutations$`Run Number` <- seq(nrow(df_permutations))
+  return(df_permutations)
+}
+
+df_pre_elimination <- get_unique_permutations(permutation_data, c("Prize Location", "First Choice"))
+
+p0 <- get_permutation_grid(df_pre_elimination) + scale_y_continuous(breaks = (1:9), expand = expansion(0,0))
+
+p1 <-
+  p0 + geom_point(data = df_pre_elimination, aes(x = `Prize Location`), size = 2) +
+  NULL
+
+p2 <-
+  p0 + geom_tile(
+    data = df_pre_elimination,
+    aes(x = `First Choice`),
+    fill = 'bisque',
+    color = 'gray40'
+  ) 
+
+p3 <- p2 + 
+  geom_point(data = df_pre_elimination, aes(x = `Prize Location`), size = 2) #+ annotate("text", x = 3.8, y = (1:9), label = "1/9", size = 3)
+
+p_123 <- annotate_figure(
+  ggarrange(
+    ggarrange(
+      get_legend_plot(df_legend[c(1,2,4),]),
+      NULL,
+      widths = c(0.6, 0.4),
+      nrow = 1,
+      align = 'h'
+    ),
+    NULL,
+    ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h'),
+    nrow = 3,
+    heights = c(1, 0.1, 9)
+  ),
+  left = text_grob("Permutation", rot = 90, size = 12),
+  bottom = text_grob(
+    "Door Choice",
+    size = 12,
+    hjust = 0,
+    vjust = -0.2,
+    x = 0.25
+  ),
+  right = text_grob(paste(rep("p = 1/9",9), collapse="\n") , hjust = 5.2, lineheight = 1.6, vjust = 0.53)
+)
+p_123
+
+```
+Next step is for the host to eliminate one of the two un-chosen doors. However, he cannot eliminate a door which has a prize. So, some of the permutations above result in two choices for the host to eliminate from, and in the other cases, the host can eliminate only one of the doors. 
+
+In permutations 1, 5, and 9, the host has two choices for the door elimination, and hence these can be divided into permutations 1a, 1b, 5a, 5b and 9a, 9b respectively with half the probability each (1/18) after the elimination step. For the other permutations, the host has only one choice for elimination, so the probability of that permutation remains unchanged at 1/9 both before and after elimination, as shown below.  
+
+```{r second-plots, message=F, warning=F, error=F}
+df_post_elimination <- get_unique_permutations(permutation_data, c("Prize Location", "First Choice", "Eliminated Position"))
+df_post_elimination$`Alternate Choice` <- apply(
+  df_post_elimination,
+  MARGIN = 1,
+  FUN = function(x) {
+    (
+      setdiff(1:3, c(x['Eliminated Position'], x['First Choice']))
+        [sample(length(setdiff(1:3, c(x['Eliminated Position'], x['First Choice']))), 1)]  
+    )
+    
+  }
+  
+)
+df_post_elimination$probs = "p=1/9"
+
+p4_a <- get_permutation_grid(df_post_elimination) + 
+  scale_y_continuous(breaks = (1:12), 
+                     labels = c("1a", "1b", "2", "3", 
+                                "4", "5a", "5b", "6",
+                                "7", "8", "9a", "9b"), 
+                     expand = expansion(0,0)) + 
+  geom_tile(
+    data = df_post_elimination,
+    aes(x = `First Choice`),
+    fill = 'bisque',
+    color = 'gray40'
+  )+ 
+  geom_tile(
+    data = df_post_elimination,
+    aes(x = `Eliminated Position`),
+    fill = 'gray60',
+    color = 'gray40'
+  ) + 
+  geom_tile(
+    data = df_post_elimination,
+    aes(x = `Alternate Choice`),
+    fill = 'lightskyblue', #'darkolivegreen3', #'bisque',
+    color = 'gray40'
+  ) + 
+  geom_point(data = df_post_elimination, aes(x = `Prize Location`), size = 2) 
+
+p5_a <-  get_permutation_grid(df_post_elimination) + 
+  scale_y_continuous(breaks = (1:12), 
+                      labels = c("1a", "1b", "2", "3",
+                                "4", "5a", "5b", "6",
+                                "7", "8", "9a", "9b"),
+                     expand = expansion(0,0)) + 
+  geom_tile(
+    data = df_post_elimination,
+    aes(x = `Eliminated Position`),
+    fill = 'gray60',
+    color = 'gray40'
+  ) +
+  geom_tile(
+    data = df_post_elimination,
+    aes(x = `Alternate Choice`),
+    fill = 'lightskyblue', #'darkolivegreen3', #'bisque',
+    color = 'gray40'
+  ) + 
+  geom_point(data = df_post_elimination, aes(x = `Prize Location`), size = 2) 
 
 
+annotate_figure(
+  ggarrange(
+    get_legend_plot(head(df_legend, 5)),
+    NULL,
+    ggarrange(ggarrange(p1, p2, p3, align = 'v', nrow = 1),
+              NULL,
+              ggarrange(p4_a, align = 'v', nrow = 1),
+              nrow = 1,
+              widths = c(2, 0.3, 1)
+              ),
+    nrow = 3,
+    heights = c(1, 0.1, 10)
+  ),
+  left = text_grob("Permutation", rot = 90, size = 12),
+  bottom = text_grob(
+    "Door Choice",
+    size = 12,
+    hjust = 0,
+    x = 0.45
+  ),
+  right = text_grob(paste(c("p = 1/18","p = 1/18", "p = 1/9", "p = 1/9", 
+                            "p = 1/9", "p = 1/18","p = 1/18", "p = 1/9",  
+                             "p = 1/9", "p = 1/9", "p = 1/18","p = 1/18"
+                            ), collapse="\n") , hjust = 0.8, lineheight = 1.7, vjust = 0.52)
+)
+
+```
+
+Now, if we add up all the probabilities for Winning Alternative Choices (`Blue squares with a dot`), we can see that they add up to 6/9 or 2/3. Similarly if we add all the probabilities for the Winning Original Choices (`orange squares with a dot`), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that changing our choice after the host eliminates one of the doors is the better option. 
+
+
+## Conclusion
+
+We have a looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
