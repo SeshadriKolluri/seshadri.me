@@ -339,7 +339,7 @@ annotate_figure(
   )
 )</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/alternate-choice-1.png" width="672" />
-Just to make it clearer, we can separate the simulations where the <strong>Alternate Choice (<span style="color:#87CEFA">▦</span>)</strong> was the winning choice, and where the <strong>Original Choice (<span style="color:#FFE4C4">▦</span>)</strong> was the winning choice, as below. Now, we can clearly see that <strong>changing our choice after the elimination of one of the doors, improved the success probability by about 2x.</strong></p>
+Just to make it clearer, we can separate the simulations where the <strong>Alternate Choice (<span style="color:#87CEFA">▦</span>)</strong> was the winning choice, and where the <strong>Original Choice (<span style="color:#FFE4C4">▦</span>)</strong> was the winning choice, as shown in the two right-most plots below. Now, we can clearly see that <strong>changing our choice after the elimination of one of the doors, improved the success probability by about 2x.</strong></p>
 <pre class="r"><code>p5_a &lt;- get_p5(df_experiment_runs %&gt;% filter(Winning_Choice == &quot;Alternate Choice&quot;), y_var = &quot;y2&quot;)
 p5_b &lt;- get_p5(df_experiment_runs %&gt;% filter(Winning_Choice == &quot;Original Choice&quot;), y_var = &quot;y2&quot;)
 
@@ -419,7 +419,7 @@ p_123 &lt;- annotate_figure(
     &quot;Door Choice&quot;,
     size = 12,
     hjust = 0,
-    vjust = -0.2,
+    vjust = -4,
     x = 0.25
   ),
   right = text_grob(paste(rep(&quot;p = 1/9&quot;,9), collapse=&quot;\n&quot;) , hjust = 5.2, lineheight = 1.55, vjust = 0.45)

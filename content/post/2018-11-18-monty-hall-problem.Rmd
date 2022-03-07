@@ -370,7 +370,7 @@ annotate_figure(
   )
 )
 ```
-Just to make it clearer, we can separate the simulations where the **Alternate Choice (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`)** was the winning choice, and where the **Original Choice (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`)** was the winning choice, as below. Now, we can clearly see that **changing our choice after the elimination of one of the doors, improved the success probability by about 2x.**
+Just to make it clearer, we can separate the simulations where the **Alternate Choice (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`)** was the winning choice, and where the **Original Choice (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`)** was the winning choice, as shown in the two right-most plots below. Now, we can clearly see that **changing our choice after the elimination of one of the doors, improved the success probability by about 2x.**
 
 ```{r alternate-choice-2, message=F, warning=F, error=F}
 p5_a <- get_p5(df_experiment_runs %>% filter(Winning_Choice == "Alternate Choice"), y_var = "y2")
@@ -455,7 +455,7 @@ p_123 <- annotate_figure(
     "Door Choice",
     size = 12,
     hjust = 0,
-    vjust = -0.2,
+    vjust = -4,
     x = 0.25
   ),
   right = text_grob(paste(rep("p = 1/9",9), collapse="\n") , hjust = 5.2, lineheight = 1.55, vjust = 0.45)
