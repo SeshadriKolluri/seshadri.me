@@ -28,7 +28,7 @@ The rules of the game are as the following.
 
 The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after the elimination, or if it **doesn't matter**. Apparently, majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally. But, it is now well known that **the chances of success are better if we switch to the remaining door after elimination. 
 
-In this post, I will try to look at the problem in 3 different ways, in an unnecessary amount of detail - unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem ([link](https://www.cut-the-knot.org/pythagoras/)). The code for this post and visualizations can be found [here](https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd). 
+In this post, I will try to **look at the Monty Hall problem in 3 different ways**, in an unnecessary amount of detail - unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem ([link](https://www.cut-the-knot.org/pythagoras/)). The code for this post and visualizations can be found [here](https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd). 
 
 ### Approach 1 - A Thought Experiment
 
