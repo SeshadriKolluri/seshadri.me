@@ -563,10 +563,10 @@ Now, if we add up all the probabilities for Winning Alternative Choices (`Blue s
 
 ## Conclusion
 
-We have a looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
+We have looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
 
-## Next Steps
-I can't believe there still things to explore after spending so much time on this post. But here are a couple more things that I am planning to investigate when I get a chance: 
+### Next Steps
+I can't believe there still things to explore after spending so much time on this post. However, here are a couple more things that I am planning to investigate when I get a chance.
 
 * Trying to arrive at the same answer using a Bayesian approach
 * Practical implications of the Monty Hall Problem and other similar problems
