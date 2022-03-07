@@ -16,7 +16,7 @@ library(knitr)
 library(kableExtra)
 ```
 
-## Problem Description
+### Problem Description
 
 [Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. The problem describes a game show where the participant has choose among three doors, only one of which contains a prize behind it. 
 
@@ -561,11 +561,11 @@ annotate_figure(
 Now, if we add up all the probabilities for Winning Alternative Choices (`Blue squares with a dot`), we can see that they add up to 6/9 or 2/3. Similarly, if we add all the probabilities for the Winning Original Choices (`Orange squares with a dot`), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that **changing our choice after the host eliminates one of the doors is the better option**. 
 
 
-## Conclusion
+### Conclusion
 
 We have looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
 
-### Next Steps
+#### Next Steps
 I can't believe there still things to explore after spending so much time on this post. However, here are a couple more things that I am planning to investigate when I get a chance.
 
 * Trying to arrive at the same answer using a Bayesian approach

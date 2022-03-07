@@ -10,8 +10,8 @@ math: TRUE
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
-<div id="problem-description" class="section level2">
-<h2>Problem Description</h2>
+<div id="problem-description" class="section level3">
+<h3>Problem Description</h3>
 <p><a href="https://en.wikipedia.org/wiki/Monty_Hall_problem">Monty Hall Problem</a> is one of the most popular probability puzzles. The problem describes a game show where the participant has choose among three doors, only one of which contains a prize behind it.</p>
 <p>The rules of the game are as the following.</p>
 <ul>
@@ -21,6 +21,7 @@ math: TRUE
 </ul>
 <p>The question is whether you are better off sticking to your <strong>Original Choice</strong>, or switching to the <strong>Alternate Choice</strong> after the elimination, or if it <strong>doesn’t matter</strong>. Apparently, majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally. But, it is now well known that **the chances of success are better if we switch to the remaining door after elimination.</p>
 <p>In this post, I will try to look at the problem in 3 different ways, in an unnecessary amount of detail - unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem (<a href="https://www.cut-the-knot.org/pythagoras/">link</a>). The code for this post and visualizations can be found <a href="https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd">here</a>.</p>
+</div>
 <div id="approach-1---a-thought-experiment" class="section level3">
 <h3>Approach 1 - A Thought Experiment</h3>
 <p>Let us assume we choose <strong>Door 3</strong> initially. Let us also imagine <strong>Door 1 + Door 2</strong> as one unit, and <strong>Door 3</strong> as the second unit as shown below. We can see that the probability of success for the <strong>Door 1 + Door 2</strong> unit is 2/3. Now, imagine if the host gives us the ability to choose that entire unit (consisting of two doors) instead of <strong>Door 3</strong>. We would obviously choose that unit, as it has a 2/3 probability of success. When the host eliminates <strong>Door 2</strong> and gives us an option to choose <strong>Door 1</strong> (or he eliminates <strong>Door 1</strong> and gives us the option to choose <strong>Door 2</strong>), he is effectively giving us the option to choose the entire unit of <strong>Door 1 + Door 2</strong>. So, when we leave our original choice (<strong>Door 3</strong>) behind, and <strong>switch to the other non-eliminated door</strong> in the two door unit, we have a higher probability of success (2/3).</p>
@@ -517,12 +518,11 @@ annotate_figure(
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/second-plots-1.png" width="672" /></p>
 <p>Now, if we add up all the probabilities for Winning Alternative Choices (<code>Blue squares with a dot</code>), we can see that they add up to 6/9 or 2/3. Similarly, if we add all the probabilities for the Winning Original Choices (<code>Orange squares with a dot</code>), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that <strong>changing our choice after the host eliminates one of the doors is the better option</strong>.</p>
 </div>
-</div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level3">
+<h3>Conclusion</h3>
 <p>We have looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem.</p>
-<div id="next-steps" class="section level3">
-<h3>Next Steps</h3>
+<div id="next-steps" class="section level4">
+<h4>Next Steps</h4>
 <p>I can’t believe there still things to explore after spending so much time on this post. However, here are a couple more things that I am planning to investigate when I get a chance.</p>
 <ul>
 <li>Trying to arrive at the same answer using a Bayesian approach</li>
