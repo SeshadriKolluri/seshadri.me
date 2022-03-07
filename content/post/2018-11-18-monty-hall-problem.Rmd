@@ -18,7 +18,7 @@ library(kableExtra)
 
 ## Problem Description
 
-[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. The problem describes a game show where there are three doors. One of the doors contains a prize behind the door, and the other two doors don't have the prize behind them.  
+[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. The problem describes a game show where the participant has choose among three doors, only one of which contains a prize behind it. 
 
 The rules of the game are as the following.
 
@@ -26,22 +26,20 @@ The rules of the game are as the following.
 -   The host knows which door has the prize, and opens one of the the doors that don't have the prize behind them. This door is then eliminated. (**Eliminated Choice**, `r knitr::asis_output("\U25FD")`).
 -   You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (**Alternate Choice**, `r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`).
 
-The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after the elimination, or if it **doesn't matter**.
+The question is whether you are better off sticking to your **Original Choice**, or switching to the **Alternate Choice** after the elimination, or if it **doesn't matter**. Apparently, majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally. But, it is now well known that **the chances of success are better if we switch to the remaining door after elimination. 
 
-## Solution
-
-Apparently an overwhelming majority of the people think that it doesn't matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally, but it is now well known that the chances of success are better if we switch to the remaining door after elimination. We will try to understand it in a few different ways. 
+In this post, I will try to look at the problem in 3 different ways, in an unnecessary amount of detail - unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem ([link](https://www.cut-the-knot.org/pythagoras/)). The code for this post and visualizations can be found [here](https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd). 
 
 ### Approach 1 - A Thought Experiment
 
-Let us assume we choose **Door 3** initially. Now imagine **Door 1 + Door 2** as one unit, and **Door 3** as the second unit as shown below. We can see that the probability of success for the **Door 1 + Door 2** unit is 2/3. Now, imagine if the host gives us the ability to choose that entire unit (consisting of two doors) instead of **Door 3**. We would obviously choose that unit as it has a 2/3 probability of success. When the host eliminates **Door 2** and gives you an option to choose **Door 1** (or he eliminates **Door 1** and gives us the option to choose **Door 2**), he is effectively giving us an option to choose the entire unit of **Door 1 + Door 2**. So, when we leave our original choice (**Door 3**) behind, and **switch to this other non-eliminated door** in the two door unit, we have a higher probability of success (2/3). 
+Let us assume we choose **Door 3** initially. Let us also imagine **Door 1 + Door 2** as one unit, and **Door 3** as the second unit as shown below. We can see that the probability of success for the **Door 1 + Door 2** unit is 2/3. Now, imagine if the host gives us the ability to choose that entire unit (consisting of two doors) instead of **Door 3**. We would obviously choose that unit, as it has a 2/3 probability of success. When the host eliminates **Door 2** and gives us an option to choose **Door 1** (or he eliminates **Door 1** and gives us the option to choose **Door 2**), he is effectively giving us the option to choose the entire unit of **Door 1 + Door 2**. So, when we leave our original choice (**Door 3**) behind, and **switch to the other non-eliminated door** in the two door unit, we have a higher probability of success (2/3). 
 
 ![](/montyhall/approach_1.png){width=80%} 
 While the above explanation may be intuitive enough for some people, it may still appear a little hand-waving. So, we will explore a couple more approaches below. 
 
 ### Approach 2 - Simulations
 
-We can verify if logic from the above argument is true, by simulating this experiment a large number of times. In this section, we simulate the experiment 30 times (for simplicity), and use the visuals below to understand the results. The simulations and visuals were generated using **R programming language**. You can **see the code by clicking on the code button** below. 
+We can verify if logic from the above argument is true, by simulating this experiment a large number of times. In this section, we simulate the experiment 30 times (for simplicity), and use the visuals below to understand the results. 
 
 ```{r data-generation}
 set.seed(2017)
@@ -88,19 +86,35 @@ df_experiment_runs$`Alternate Choice` <- apply(
   
 )
 
+
+df_experiment_runs$Winning_Choice <-ifelse(
+  df_experiment_runs$`Prize Location` == df_experiment_runs$`Alternate Choice`,
+  "Alternate Choice",
+  "Original Choice"
+)
+
+df_experiment_runs <- df_experiment_runs %>%
+  group_by(Winning_Choice) %>% mutate(y2 = row_number())
+
+
 df_experiment_runs_long <- pivot_longer(df_experiment_runs,
                                         cols = starts_with("Door"),
                                         names_to = "Door")
 df_experiment_runs_long$Door <-
   gsub('Door', '', df_experiment_runs_long$Door)
 
+df_experiment_runs_long$Door_modified <-
+  as.integer(df_experiment_runs_long$Door) + as.integer(
+    df_experiment_runs_long$`Prize Location` == df_experiment_runs_long$`Alternate Choice`
+  ) * 4
+
 df_legend <-
   expand_grid(
     Choices = c(
-      "Prize Location",
-      "Original Choice",
-      "Eliminated Choice",
+      "Prize\nLocation",
+      "Original\nChoice",
       "Winning\nOriginal Choice",
+      "Eliminated\nChoice",
       "Winning\nAlternate Choice"
     )
   )
@@ -110,12 +124,12 @@ df_legend$Choices <- fct_inorder(df_legend$Choices)
 get_legend_plot <- function(df) {
   ggplot(df, aes(x = Choices, fill = Choices, y = 1)) +
     geom_tile(color = 'gray50',
-              width = 0.15,
+              width = 0.13,
               height = 1) +
     coord_cartesian(ylim = c(0, 2)) +
     facet_grid(~ Choices, scales = 'free') +
-    geom_point(data = df %>% filter(grepl("Prize Location|Winning", Choices)), size = 1) +
-    scale_fill_manual(values = c("Prize Location" = 'white', "Original Choice" = 'bisque', "Eliminated Choice" = 'gray60', "Winning\nOriginal Choice" = 'bisque', "Winning\nAlternate Choice" = 'lightskyblue')) +
+    geom_point(data = df %>% filter(grepl("Prize|Winning", Choices)), size = 1) +
+    scale_fill_manual(values = c("Prize\nLocation" = 'white', "Original\nChoice" = 'bisque', "Eliminated\nChoice" = 'gray70', "Winning\nOriginal Choice" = 'bisque', "Winning\nAlternate Choice" = 'lightskyblue')) +
     theme_void() +
     
     theme(
@@ -169,11 +183,11 @@ annotate_figure(
     NULL,
     ggarrange(p1, NULL, NULL, NULL, NULL, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.2, 10)
+    heights = c(1.4, 0.2, 10)
   ),
   #
   #     ncol = 2, align = 'h'
-  left = text_grob("Experiment Number", rot = 90, size = 12),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
   bottom = text_grob(
     "Door Choice",
     size = 12,
@@ -187,7 +201,7 @@ annotate_figure(
 
 #### 2. Original door choice chosen at random:
 
-Then, let us show the original choice of the doors, denoted by orange square (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`), which are also shown at random. 
+Then, let us show the original choice of the doors, denoted by orange square (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`), which are also chosen at random. 
 
 ```{r original-choice}
 p2 <-
@@ -209,9 +223,9 @@ annotate_figure(
     NULL,
     ggarrange(p1, p2, NULL, NULL, NULL, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.2, 10)
+    heights = c(1.4, 0.2, 10)
   ),
-  left = text_grob("Experiment Number", rot = 90, size = 12),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
   bottom = text_grob(
     "Door Choice",
     size = 12,
@@ -226,7 +240,7 @@ annotate_figure(
 
 When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a orange square with a dot in the picture below. 
 
-`Number of successes with original choice: number of orange squares with a dot`. 
+`No. of successes with original choice = No. of orange squares with a dot`. 
 
 In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about 0.33 probability. 
 
@@ -237,7 +251,7 @@ p3 <-
 annotate_figure(
   ggarrange(
     ggarrange(
-      get_legend_plot(df_legend[c(1,2,4),]),
+      get_legend_plot(df_legend[c(1,2,3),]),
       NULL,
       widths = c(0.6, 0.4),
       nrow = 1,
@@ -246,9 +260,9 @@ annotate_figure(
     NULL,
     ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.2, 10)
+    heights = c(1.4, 0.2, 10)
   ),
-  left = text_grob("Experiment Number", rot = 90, size = 12),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
   bottom = text_grob(
     "Door Choice",
     size = 12,
@@ -260,7 +274,7 @@ annotate_figure(
 
 #### 4. Eliminating one of the doors without the prize:
 
-At this point the host would eliminate one of the doors that don't contain the prize. We denote this eliminated choice by gray square (`r knitr::asis_output("\U25FD")`).
+At this point, the host would eliminate one of the doors which doesn't contain the prize and is not chosen as as the original choice. We denote this eliminated choice by a gray square (`r knitr::asis_output("\U25FD")`). You can see that for some of the experiments, the host can choose one of the two doors to eliminate (eg. runs 3, 11 and 12), but in in some other experiments, he has only one choice to eliminate (eg. runs 1, 2, 4). 
 
 
 ```{r eliminated-positions}
@@ -268,12 +282,11 @@ p4 <-
   p3 + geom_tile(
     data = df_experiment_runs,
     aes(x = `Eliminated Position`),
-    fill = 'gray60',
+    fill = 'gray70',
     color = 'gray40'
-  ) #+
-#labs(subtitle = 'Original Choice\n+\nEliminated Choice')
+  )
+
 annotate_figure(
-  # ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h'),
   ggarrange(
     ggarrange(
       get_legend_plot(head(df_legend, 4)),
@@ -285,9 +298,9 @@ annotate_figure(
     NULL,
     ggarrange(p1, p2, p3, p4, NULL, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.2, 10)
+    heights = c(1.4, 0.2, 10)
   ),
-  left = text_grob("Experiment Number", rot = 90, size = 12),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
   bottom = text_grob(
     "Door Choice",
     size = 12,
@@ -299,34 +312,45 @@ annotate_figure(
 
 #### 5. Considering the alternate choice:
 
-After one of the doors, is eliminated we have the option of changing our choice to the alternate door, which is denoted by the blue square (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`) in this picture. 
+After one of the doors is eliminated, we have the option of changing our choice to the alternate door, which is denoted by the blue square (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`) in this picture. 
 
-`Number of successes with alternate choice: number of blue squares with a dot`. 
+`No. of successes with alternate choice =  No. of blue squares with a dot`. 
 
-We can see that there about 20 blue squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice. 
+If we count carefully, we can see that there about 20 blue squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice. 
 
-```{r alternate-choice}
-p5 <-
-  p0 + geom_tile(
-    data = df_experiment_runs,
-    aes(x = `Eliminated Position`),
-    fill = 'gray60',
-    color = 'gray40'
+```{r alternate-choice, message=F, warning=F, error=F}
+get_p5 <- function(df_experiment_runs, y_var = "Run Number"){
+  p0_tmp <- get_permutation_grid(df_experiment_runs)
+  p5_tmp <- p0_tmp + 
+    geom_tile(
+      data = df_experiment_runs,
+      aes(x = `Eliminated Position`, y = get(y_var)),
+      fill = 'gray70',
+      color = 'gray40'
   ) +
   geom_tile(
     data = df_experiment_runs,
-    aes(x = `First Choice`),
+    aes(x = `First Choice`, y = get(y_var)),
     fill = 'bisque',
     color = 'gray40'
   ) +
   geom_tile(
     data = df_experiment_runs,
-    aes(x = `Alternate Choice`),
+    aes(x = `Alternate Choice`, y = get(y_var)),
     fill = 'lightskyblue',
     color = 'gray40'
   ) +
-  geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5) #+
-#labs(subtitle = 'Alternate Chocie\n+\nPrize Location')
+  geom_point(
+    data = df_experiment_runs,
+    aes(x = `Prize Location`, y = get(y_var)), 
+    size = 0.5) + 
+  scale_y_continuous(limits = c(0.5,30.5), expand = expansion(0,0)) + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+  return(p5_tmp)
+}
+
+p5 <- get_p5(df_experiment_runs)
 
 annotate_figure(
   # ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h'),
@@ -335,9 +359,33 @@ annotate_figure(
     NULL,
     ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.2, 10)
+    heights = c(1.4, 0.2, 10)
   ),
-  left = text_grob("Experiment Number", rot = 90, size = 12),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
+  bottom = text_grob(
+    "Door Choice",
+    size = 12,
+    hjust = 0,
+    x = 0.45
+  )
+)
+```
+Just to make it clearer, we can separate the simulations where the **Alternate Choice (`r knitr::asis_output('<span style="color:#87CEFA">\U25A6</span>')`)** was the winning choice, and where the **Original Choice (`r knitr::asis_output('<span style="color:#FFE4C4">\U25A6</span>')`)** was the winning choice, as below. Now, we can clearly see that **changing our choice after the elimination of one of the doors, improved the success probability by about 2x.**
+
+```{r alternate-choice-2, message=F, warning=F, error=F}
+p5_a <- get_p5(df_experiment_runs %>% filter(Winning_Choice == "Alternate Choice"), y_var = "y2")
+p5_b <- get_p5(df_experiment_runs %>% filter(Winning_Choice == "Original Choice"), y_var = "y2")
+
+annotate_figure(
+  # ggarrange(p1, p2, p3, p4, p5, nrow = 1, align = 'h'),
+  ggarrange(
+    get_legend_plot(head(df_legend, 5)),
+    NULL,
+    ggarrange(p1, p2, p3, p4, p5, p5_a, p5_b, align = 'v', nrow = 1),
+    nrow = 3,
+    heights = c(1.4, 0.2, 10)
+  ),
+  left = text_grob("Simulation Number", rot = 90, size = 12),
   bottom = text_grob(
     "Door Choice",
     size = 12,
@@ -347,12 +395,9 @@ annotate_figure(
 )
 ```
 
-**So, changing our choice after the elimination of one of the doors, improved the success probability by about 2x.**
-
 ### Approach 3 - Exact Probability Calculations
 
-Though the previous simulations make sense, they do not provide a definitive proof that switching our door choice would increase our probability of success to 2/3. As a matter of fact, there could be a different set of 30 simulation runs, where the results could be the opposite of what we got (though less likely). So, in this section we try to provide more rigorous permutations-based calculations to get these probabilities. 
-
+Though the previous simulations make sense, they do not provide a definitive proof that switching our door choice would increase our probability of success to 2/3. As a matter of fact, there could be a different set of 30 simulation runs where the results could be the opposite of what we got (though less likely). So, in this section we try to provide a more rigorous permutations-based calculations to get these probabilities. 
 
 First, the host 3 doors to choose from for placing the prize, and we have 3 doors to choose from for our initial choice. As shown below, we have total 9 possible permutations, each having an equal probability of 9. 
 
@@ -395,16 +440,15 @@ p3 <- p2 +
 p_123 <- annotate_figure(
   ggarrange(
     ggarrange(
-      get_legend_plot(df_legend[c(1,2,4),]),
+      get_legend_plot(df_legend[c(1,2,3),]),
       NULL,
       widths = c(0.6, 0.4),
       nrow = 1,
       align = 'h'
     ),
-    NULL,
     ggarrange(p1, p2, p3, NULL, NULL, nrow = 1, align = 'h'),
     nrow = 3,
-    heights = c(1, 0.1, 9)
+    heights = c(1.3, 9)
   ),
   left = text_grob("Permutation", rot = 90, size = 12),
   bottom = text_grob(
@@ -414,7 +458,7 @@ p_123 <- annotate_figure(
     vjust = -0.2,
     x = 0.25
   ),
-  right = text_grob(paste(rep("p = 1/9",9), collapse="\n") , hjust = 5.2, lineheight = 1.6, vjust = 0.53)
+  right = text_grob(paste(rep("p = 1/9",9), collapse="\n") , hjust = 5.2, lineheight = 1.55, vjust = 0.45)
 )
 p_123
 
@@ -454,7 +498,7 @@ p4_a <- get_permutation_grid(df_post_elimination) +
   geom_tile(
     data = df_post_elimination,
     aes(x = `Eliminated Position`),
-    fill = 'gray60',
+    fill = 'gray70',
     color = 'gray40'
   ) + 
   geom_tile(
@@ -474,7 +518,7 @@ p5_a <-  get_permutation_grid(df_post_elimination) +
   geom_tile(
     data = df_post_elimination,
     aes(x = `Eliminated Position`),
-    fill = 'gray60',
+    fill = 'gray70',
     color = 'gray40'
   ) +
   geom_tile(
@@ -497,7 +541,7 @@ annotate_figure(
               widths = c(2, 0.3, 1)
               ),
     nrow = 3,
-    heights = c(1, 0.1, 10)
+    heights = c(1.4, 0.1, 10)
   ),
   left = text_grob("Permutation", rot = 90, size = 12),
   bottom = text_grob(
@@ -509,14 +553,20 @@ annotate_figure(
   right = text_grob(paste(c("p = 1/18","p = 1/18", "p = 1/9", "p = 1/9", 
                             "p = 1/9", "p = 1/18","p = 1/18", "p = 1/9",  
                              "p = 1/9", "p = 1/9", "p = 1/18","p = 1/18"
-                            ), collapse="\n") , hjust = 0.8, lineheight = 1.7, vjust = 0.52)
+                            ), collapse="\n") , hjust = 0.8, lineheight = 1.7, vjust = 0.55)
 )
 
 ```
 
-Now, if we add up all the probabilities for Winning Alternative Choices (`Blue squares with a dot`), we can see that they add up to 6/9 or 2/3. Similarly if we add all the probabilities for the Winning Original Choices (`orange squares with a dot`), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that changing our choice after the host eliminates one of the doors is the better option. 
+Now, if we add up all the probabilities for Winning Alternative Choices (`Blue squares with a dot`), we can see that they add up to 6/9 or 2/3. Similarly, if we add all the probabilities for the Winning Original Choices (`Orange squares with a dot`), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that **changing our choice after the host eliminates one of the doors is the better option**. 
 
 
 ## Conclusion
 
 We have a looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
+
+## Next Steps
+I can't believe there still things to explore after spending so much time on this post. But here are a couple more things that I am planning to investigate when I get a chance: 
+
+* Trying to arrive at the same answer using a Bayesian approach
+* Practical implications of the Monty Hall Problem and other similar problems
