@@ -16,29 +16,21 @@ math: TRUE
 <p>The rules of the game are as the following.</p>
 <ul>
 <li>You first choose a door and let the host know. (<strong>Original Choice</strong>, <span style="color:#FFE4C4">▦</span>).</li>
-<li>The host knows which door has the prize, and opens one of the the (un-chosen) doors which doesn’t have the prize behind it. This door is then eliminated. (<strong>Eliminated Choice</strong>, ◽).</li>
+<li>The host knows which door has the prize, and opens one of the the doors that don’t have the prize behind them. This door is then eliminated. (<strong>Eliminated Choice</strong>, ◽).</li>
 <li>You now have the option of sticking with your Original Choice, or changing to the other remaining door after elimination (<strong>Alternate Choice</strong>, <span style="color:#87CEFA">▦</span>).</li>
 </ul>
-<p>The question is whether you are better off sticking to your <strong>Original Choice</strong>, or switching to the <strong>Alternate Choice</strong> after the elimination, or if it <strong>doesn’t matter</strong>. Apparently, majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally. But, it is now well known that <strong>the chances of success are better if we switch to the remaining door after elimination</strong>.</p>
-<p>In this post, I will try to <strong>look at the Monty Hall problem in 3 different ways</strong>, in an unnecessary amount of detail :smile:, unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem (<a href="https://www.cut-the-knot.org/pythagoras/">link</a>). The code for this post and visualizations can be found <a href="https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd">here</a>.</p>
+<p>The question is whether you are better off sticking to your <strong>Original Choice</strong>, or switching to the <strong>Alternate Choice</strong> after the elimination, or if it <strong>doesn’t matter</strong>. Apparently, majority of the people think that it doesn’t matter whether you stick to your original choice or change your choice to the remaining door, as both of them are expected to have 33% chance of success originally. But, it is now well known that **the chances of success are better if we switch to the remaining door after elimination.</p>
+<p>In this post, I will try to <strong>look at the Monty Hall problem in 3 different ways</strong>, in an unnecessary amount of detail - unless, of course, you are one of the kind who would get inspired by 120 different proofs of Pythagoras theorem (<a href="https://www.cut-the-knot.org/pythagoras/">link</a>). The code for this post and visualizations can be found <a href="https://github.com/SeshadriKolluri/seshadri.me/blob/master/content/post/2018-11-18-monty-hall-problem.Rmd">here</a>.</p>
 </div>
 <div id="approach-1---a-thought-experiment" class="section level3">
 <h3>Approach 1 - A Thought Experiment</h3>
-<ul>
-<li>Let us assume we choose <strong>Door 3</strong> initially.</li>
-<li>Let us also imagine <strong>Door 1 + Door 2</strong> as one unit, and <strong>Door 3</strong> as the second unit as shown below.
-<ul>
-<li>We can see that the probability of success for the <strong>Door 1 + Door 2</strong> unit is <span class="math inline">\(\frac{2}{3}\)</span>.</li>
-</ul></li>
-<li>Now, imagine if the host gives us the ability to choose that entire unit (consisting of two doors) instead of <strong>Door 3</strong>. We would obviously choose that unit, as it has a <span class="math inline">\(\frac{2}{3}\)</span> probability of success.</li>
-<li>When the host eliminates <strong>Door 2</strong> and gives us an option to choose <strong>Door 1</strong> (or vice versa), he is effectively giving us the option to choose the entire unit of <strong>Door 1 + Door 2</strong>. So, when we leave our original choice (<strong>Door 3</strong>) behind, and <strong>switch to the other non-eliminated door</strong> in the two door unit, we have a higher probability of success <span class="math inline">\(\frac{2}{3}\)</span>.</li>
-</ul>
+<p>Let us assume we choose <strong>Door 3</strong> initially. Let us also imagine <strong>Door 1 + Door 2</strong> as one unit, and <strong>Door 3</strong> as the second unit as shown below. We can see that the probability of success for the <strong>Door 1 + Door 2</strong> unit is 2/3. Now, imagine if the host gives us the ability to choose that entire unit (consisting of two doors) instead of <strong>Door 3</strong>. We would obviously choose that unit, as it has a 2/3 probability of success. When the host eliminates <strong>Door 2</strong> and gives us an option to choose <strong>Door 1</strong> (or he eliminates <strong>Door 1</strong> and gives us the option to choose <strong>Door 2</strong>), he is effectively giving us the option to choose the entire unit of <strong>Door 1 + Door 2</strong>. So, when we leave our original choice (<strong>Door 3</strong>) behind, and <strong>switch to the other non-eliminated door</strong> in the two door unit, we have a higher probability of success (2/3).</p>
 <p><img src="/montyhall/approach_1.png" style="width:80.0%" />
 While the above explanation may be intuitive enough for some people, it may still appear a little hand-waving. So, we will explore a couple more approaches below.</p>
 </div>
 <div id="approach-2---simulations" class="section level3">
 <h3>Approach 2 - Simulations</h3>
-<p>We can verify if logic from the above argument is true, by simulating this experiment a large number of times. In this section, we simulate the experiment 30 times, and use the visuals below to understand the results.</p>
+<p>We can verify if logic from the above argument is true, by simulating this experiment a large number of times. In this section, we simulate the experiment 30 times (for simplicity), and use the visuals below to understand the results.</p>
 <pre class="r"><code>set.seed(2017)
 
 # number of runs
@@ -192,7 +184,7 @@ annotate_figure(
 </div>
 <div id="original-door-choice-chosen-at-random" class="section level4">
 <h4>2. Original door choice chosen at random:</h4>
-<p>Then, let us show the original choice of the doors, denoted by an orange square (<span style="color:#FFE4C4">▦</span>), which are also chosen at random.</p>
+<p>Then, let us show the original choice of the doors, denoted by orange square (<span style="color:#FFE4C4">▦</span>), which are also chosen at random.</p>
 <pre class="r"><code>p2 &lt;-
   p0 + geom_tile(
     data = df_experiment_runs,
@@ -226,9 +218,9 @@ annotate_figure(
 </div>
 <div id="original-choice-combined-with-prize-locations" class="section level4">
 <h4>3. Original choice combined with prize locations:</h4>
-<p>When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by an orange square with a dot in the picture below.</p>
-<p><code>No. of successes with original choice = No. of orange squares with a dot</code></p>
-<p>In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about  probability.</p>
+<p>When we combine the above two plots, we can see how many times we choose the door containing a prize indicated by a orange square with a dot in the picture below.</p>
+<p><code>No. of successes with original choice = No. of orange squares with a dot</code>.</p>
+<p>In the plot below, we can say about 10 out of 30 trials result in a success where the prize location, is same as the original choice, as expected, with about 0.33 probability.</p>
 <pre class="r"><code>p3 &lt;-
   p2 + geom_point(data = df_experiment_runs, aes(x = `Prize Location`), size = 0.5)
 
@@ -293,8 +285,8 @@ annotate_figure(
 </div>
 <div id="considering-the-alternate-choice" class="section level4">
 <h4>5. Considering the alternate choice:</h4>
-<p>After one of the doors is eliminated, we have the option of changing our choice to the alternate door, which is denoted by a blue square (<span style="color:#87CEFA">▦</span>) in this picture.</p>
-<p><code>No. of successes with alternate choice =  No. of blue squares with a dot</code></p>
+<p>After one of the doors is eliminated, we have the option of changing our choice to the alternate door, which is denoted by the blue square (<span style="color:#87CEFA">▦</span>) in this picture.</p>
+<p><code>No. of successes with alternate choice =  No. of blue squares with a dot</code>.</p>
 <p>If we count carefully, we can see that there about 20 blue squares with a dot in this experiment of 30 runs, which is about twice the probability of success compared to the original choice.</p>
 <pre class="r"><code>get_p5 &lt;- function(df_experiment_runs, y_var = &quot;Run Number&quot;){
   p0_tmp &lt;- get_permutation_grid(df_experiment_runs)
@@ -435,7 +427,7 @@ p_123 &lt;- annotate_figure(
 p_123</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/permutation-data-1.png" width="672" />
 Next step is for the host to eliminate one of the two un-chosen doors. However, he cannot eliminate a door which has a prize. So, some of the permutations above result in two choices for the host to eliminate from, and in the other cases, the host can eliminate only one of the doors.</p>
-<p>In permutations 1, 5, and 9, the host has two choices for the door elimination, and hence these can be divided into permutations 1a, 1b, 5a, 5b and 9a, 9b respectively with half the probability each (<span class="math inline">\(\frac{1}{18}\)</span>) after the elimination step. For the other permutations, the host has only one choice for elimination, so the probability of that permutation remains unchanged at <span class="math inline">\(\frac{1}{9}\)</span> both before and after elimination, as shown below.</p>
+<p>In permutations 1, 5, and 9, the host has two choices for the door elimination, and hence these can be divided into permutations 1a, 1b, 5a, 5b and 9a, 9b respectively with half the probability each (1/18) after the elimination step. For the other permutations, the host has only one choice for elimination, so the probability of that permutation remains unchanged at 1/9 both before and after elimination, as shown below.</p>
 <pre class="r"><code>df_post_elimination &lt;- get_unique_permutations(permutation_data, c(&quot;Prize Location&quot;, &quot;First Choice&quot;, &quot;Eliminated Position&quot;))
 df_post_elimination$`Alternate Choice` &lt;- apply(
   df_post_elimination,
@@ -524,7 +516,7 @@ annotate_figure(
                             ), collapse=&quot;\n&quot;) , hjust = 0.8, lineheight = 1.7, vjust = 0.55)
 )</code></pre>
 <p><img src="/post/2018-11-18-monty-hall-problem_files/figure-html/second-plots-1.png" width="672" /></p>
-<p>Now, if we add up all the probabilities for Winning Alternative Choices (<code>Blue squares with a dot</code>), we can see that they add up to <span class="math inline">\(\frac{6}{9} = \frac{2}{3}\)</span>. Similarly, if we add all the probabilities for the Winning Original Choices (<code>Orange squares with a dot</code>), we can see that they add up to <span class="math inline">\(\frac{6}{18} = \frac{1}{3}\)</span>. So, we have conclusively proved that <strong>changing our choice after the host eliminates one of the doors is the better option</strong>.</p>
+<p>Now, if we add up all the probabilities for Winning Alternative Choices (<code>Blue squares with a dot</code>), we can see that they add up to 6/9 or 2/3. Similarly, if we add all the probabilities for the Winning Original Choices (<code>Orange squares with a dot</code>), we can see that they add up to 6/18 or 1/3. So, we have conclusively proved that <strong>changing our choice after the host eliminates one of the doors is the better option</strong>.</p>
 </div>
 <div id="conclusion" class="section level3">
 <h3>Conclusion</h3>
