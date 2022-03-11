@@ -18,7 +18,7 @@ library(kableExtra)
 
 ### Problem Description
 
-[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. The problem describes a game show where the participant has choose among three doors, only one of which contains a prize behind it. 
+[Monty Hall Problem](https://en.wikipedia.org/wiki/Monty_Hall_problem) is one of the most popular probability puzzles. The problem describes a game show where the participant has to choose among three doors, only one of which contains a prize behind it. 
 
 The rules of the game are as the following.
 
@@ -278,7 +278,7 @@ annotate_figure(
 
 #### 4. Eliminating one of the doors without the prize:
 
-At this point, the host would eliminate one of the doors which doesn't contain the prize and is not chosen as as the original choice. We denote this eliminated choice by a gray square (`r knitr::asis_output("\U25FD")`). You can see that for some of the experiments, the host can choose one of the two doors to eliminate (eg. runs 3, 11 and 12), but in in some other experiments, he has only one choice to eliminate (eg. runs 1, 2, 4). 
+At this point, the host would eliminate one of the doors which doesn't contain the prize and is not chosen as the original choice. We denote this eliminated choice by a gray square (`r knitr::asis_output("\U25FD")`). You can see that for some of the experiments, the host can choose one of the two doors to eliminate (eg. runs 3, 11 and 12), but in some other experiments, he has only one choice to eliminate (eg. runs 1, 2, 4). 
 
 
 ```{r eliminated-positions}
@@ -570,7 +570,7 @@ Now, if we add up all the probabilities for Winning Alternative Choices (`Blue s
 We have looked at the Monty Hall problem in 3 different ways to arrive at the same answer. I hope this gives you better insight into this problem. 
 
 #### Next Steps
-I can't believe there still things to explore after spending so much time on this post. However, here are a couple more things that I am planning to investigate when I get a chance.
+I can't believe there are still things to explore after spending so much time on this post. However, here are a couple more things that I am planning to investigate when I get a chance.
 
 * Trying to arrive at the same answer using a Bayesian approach
 * Practical implications of the Monty Hall Problem and other similar problems
