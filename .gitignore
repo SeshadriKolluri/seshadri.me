@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 .DS_Store
-blogdown
-public/*
-!public/tsp/
+Thumbs.db
+.hugo_build.lock
+/blogdown
+/public/
+/resources/
