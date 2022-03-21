@@ -4,7 +4,7 @@ author: "Seshadri Kolluri"
 date: 2022-03-12
 categories: ["Blog"]
 tags: ["Semicondutors", "Data Analysis", "R"]
-draft: true
+draft: false
 ---
 Integrated Circuits (ICs) used in electronic products are manufactured on semiconductor wafers, where each die on the wafer goes through a series of tests at the end of the manufacturing process to determine if it is good for shipment or not (called wafer sort/binning). The percentage of die that is good for shipment is called **Yield**. 
 
@@ -115,7 +115,7 @@ kable(df_limits) %>%
 ```
 
 
-## Generating mock-data
+### Generating mock-data
 
 This notebook is based on a **fictitious semiconductor data set** that I have generated. While the general characteristics of the data are realistic, they don't correspond to any real process/technology.
 
@@ -124,7 +124,7 @@ This notebook is based on a **fictitious semiconductor data set** that I have ge
 
 df_wafer_XY <- expand.grid(X = (-16:16)* 6, Y = (-16:16)*6)
 df_wafer_XY['radius'] <- sqrt(df_wafer_XY['X']**2 + df_wafer_XY['Y']**2)
-df_wafer_XY <- df_wafer_XY %>% filter((radius < 100) & (Y > -90))
+df_wafer_XY <- df_wafer_XY %>% filter((radius < 100) & (Y >= -90))
 
 # a quick plot
 p <- ggplot(df_wafer_XY, aes(x = X, y = Y)) + 
@@ -205,14 +205,17 @@ df_baseline <-
 
 
 
-# Data Exploration for understanding the cause of low yield
+### Data Exploration for understanding the cause of low yield
 
 We are told that our current baseline process is yielding low and are tasked with improving the yield. The test data from latest lot (data frame generated in python above), and the test limits (as listed in the table above) are provided. As the technology development team members, we are supposed to come up with ideas and improve the process. 
 
 Since we will be doing all the visualizations in R, let us first copy the dataframe generated in Python into the R environment for easier access. Also display the first few rows of the data as a sample. 
+
 ```{r sample-data-display}
 # Display the first few rows as a sample
-kable(head(df_baseline)) %>% 
+kable(head(df_baseline %>% select(-any_of(
+  c("LotID", "radius")
+)))) %>%
   kable_styling(
     bootstrap_options = "striped",
     full_width = F,
@@ -227,55 +230,77 @@ kable(head(df_baseline)) %>%
 # Code below calculates the yield by wafer and plots a bar chart.
 # Yield by wafer is calculate by looking at the fraction of dies with "Pass" == TRUE in a wafer
 
-df_baseline %>% group_by(Wafer) %>% summarise(Yield_Percentage = sum(Pass)/n()) %>% 
+df_baseline %>% 
+  group_by(Wafer) %>% 
+  summarise(Yield_Percentage = sum(Pass)/n()) %>%
   ggplot(aes(x = Wafer, y = Yield_Percentage)) + 
-  geom_bar(stat = "identity", fill = 'darkseagreen') + 
-  scale_y_continuous(labels = scales::percent) + scale_x_continuous(breaks = (1:6)) +  
-  geom_text(aes(label = scales::percent(Yield_Percentage, accuracy = 1)), nudge_y = 0.06 ) + 
-  labs(y = 'Yield (% of Passing Die)', x = 'Wafer Number', title = 'Yield by Wafer') + 
-  theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16))
+  geom_bar(stat = "identity", fill = 'gray50') +
+  scale_y_continuous(labels = function(x){scales::percent(x, accuracy = 1)}, expand = expansion(0,0)) + 
+  scale_x_continuous(breaks = (1:6), expand = expansion(0,0)) +
+  geom_text(aes(label = scales::percent(Yield_Percentage, accuracy = 1)), 
+              nudge_y = -0.04, color = 'white') +
+  labs(y = 'Yield (% of Passing Die)', x = 'Wafer Number', title = 'Yield by Wafer') +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(size = 14, color = 'gray40'),
+        axis.text.y = element_blank(),
+        axis.title.x = element_text(size = 16, color = 'gray40'),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 16, color = 'gray40', hjust = 0.5),
+        panel.grid = element_blank())
 ```
 
 The next step is to figure out which tests are contributing to the yield loss using the limits provided before. Let us look at what percentage of dies are passing each test in each wafer. It is always good to look at the yields by wafer along with yields for all the wafers together as there could be some wafer to wafer variations in the manufacturing. 
 
 ```{r yield-heatmap}
-# The test names are assigned as the row names for convinience
+# The test names are assigned as the row names for convenience
 row.names(df_limits) <- df_limits$TestName
 
 # The function below generates a tile plot of yield by category for each wafer
 # taking the test data and test limits as inputs
 
-plot_yield_tile <- function(df_limts, df_test_data){
-  
+plot_yield_tile <- function(df_limts, df_test_data) {
   # Generate a separate Pass/Fail column for each test
-  for(i in 1:nrow(df_limits)){
-    df_test_data[paste0('Pass_',df_limits$TestName[i])] <- (
-      (is.na(df_limits$UpperLimit[i]) | 
-         (df_test_data[paste0(df_limits$TestName[i])] < df_limits$UpperLimit[i]))  & 
-      (is.na(df_limits$LowerLimit[i]) | 
-         (df_test_data[paste0(df_limits$TestName[i])] > df_limits$LowerLimit[i]))
-      )
+  for (i in 1:nrow(df_limits)) {
+    df_test_data[paste0('Pass_', df_limits$TestName[i])] <- ((
+      is.na(df_limits$UpperLimit[i]) |
+        (df_test_data[paste0(df_limits$TestName[i])] < df_limits$UpperLimit[i])
+    )  &
+      (
+        is.na(df_limits$LowerLimit[i]) |
+          (df_test_data[paste0(df_limits$TestName[i])] > df_limits$LowerLimit[i])
+      ))
   }
   
   # Calculate yield grouped by category and wafer
-  df_category_yield <- df_test_data[c('LotID','Wafer',
-                                      grep('Pass',colnames(df_test_data),value = T))] %>% 
-                          melt(id.vars = c('LotID','Wafer'), variable.name = 'Category') %>%
-                          group_by(LotID,Wafer,Category) %>% 
-                          summarise(Yield_Percent = sum(value)/n(), NumDies = n())
+  df_category_yield <- df_test_data[c('LotID', 'Wafer',
+                                      grep('Pass', colnames(df_test_data), value = T))] %>%
+    melt(id.vars = c('LotID', 'Wafer'),
+         variable.name = 'Category') %>%
+    group_by(LotID, Wafer, Category) %>%
+    summarise(Yield_Percent = sum(value) / n(), NumDies = n(), .groups = 'rowwise')
   
   # Cleaning up the category names
-  df_category_yield$Category <- gsub('Pass$','Final_Yield',df_category_yield$Category)
+  df_category_yield$Category <-
+    gsub('Pass$', 'Final_Yield', df_category_yield$Category)
   
   # Generating the tile plot
-  pyield <- ggplot(df_category_yield, aes(x = Wafer, y = Category, fill = Yield_Percent)) + 
-            geom_tile(color = 'black') + 
-            geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 5) + 
-            scale_fill_gradient(low = 'red', high = 'green', 
-                                limits = c(0.2,1), labels = scales::percent) + 
-            scale_x_continuous(expand=c(0,0),breaks = (1:6)) + 
-            theme(axis.text = element_text(size = 12), axis.title = element_text(size = 16)) + 
-            labs(title = 'Percentage of dies passing each test in each wafer')
+  pyield <-
+    ggplot(df_category_yield,
+           aes(x = Wafer, y = Category, fill = Yield_Percent)) +
+    geom_tile(color = 'black') +
+    geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 5) +
+    # scale_fill_viridis_c(option = 'magma') +
+    # scale_fill_gradient(low = 'white', high = 'deepskyblue',
+    #                     limits = c(0,1), labels = scales::percent) +
+    scale_fill_distiller(palette = 'Blues', trans = "reverse", labels = scales::percent) + 
+    scale_x_continuous(expand = expansion(0, 0), breaks = (1:6)) +
+    scale_y_discrete(expand = expansion(0,0)) + 
+    theme(axis.text = element_text(size = 12),
+          axis.title.x = element_text(size = 16), 
+          axis.title.y = element_blank(),
+          legend.position = 'none',
+          ) +
+    labs(title = 'Percentage of dies passing each test in each wafer')
   
   return(pyield)
 }
