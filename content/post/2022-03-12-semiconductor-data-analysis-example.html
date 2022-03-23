@@ -1,0 +1,1452 @@
+---
+title: "Semiconductor Data Analysis Example"
+author: "Seshadri Kolluri"
+date: 2022-03-12
+categories: ["Blog"]
+tags: ["Semicondutors", "Data Analysis", "R"]
+draft: false
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+<link href="/rmarkdown-libs/lightable/lightable.css" rel="stylesheet" />
+
+
+<p>Integrated Circuits (ICs) used in electronic products are manufactured on semiconductor wafers, where each die on the wafer goes through a series of tests at the end of the manufacturing process to determine if it is good for shipment or not (called wafer sort/binning). The percentage of die that is good for shipment is called <strong>Yield</strong>.</p>
+<p>In this example, we illustrate a hypothetical case where a team has an yield issue, identifies the underlying root-cause using data analysis and visualizations, designs an experiment to solve the problem, and successfully verifies that they have improved the yield / process metrics using hypothesis testing.</p>
+<center>
+<div class="figure">
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/a1/Wafer_2_Zoll_bis_8_Zoll.jpg" alt="" />
+<p class="caption">Fig 1. Semiconductor Wafers, Source: wikipedia</p>
+</div>
+</center>
+<p>In the following sections, we cover the following:</p>
+<ul>
+<li>Generating mock-data for the problem</li>
+<li>Exploring the yield issue using various visualizations in R</li>
+<li>Mock-experiment design to address the yield issue/improve the process</li>
+<li>Analyzing the results of the experiment using various visualizations</li>
+<li>Hypothesis-testing to verify we actually improved desired metrics</li>
+<li>Conclusions</li>
+</ul>
+<div id="yield-definition-and-criteria" class="section level3">
+<h3>Yield Definition and Criteria</h3>
+<p>In this example, each part is tested with 6 tests (T01 to T06). A good die is defined as a die that passes all 6 tests. The passing criteria for the tests are as displayed in the table below.</p>
+<pre class="r"><code># Define a dataframe from scratch using test names and limits provided
+df_limits &lt;- setNames(data.frame(matrix(ncol = 4, nrow = 0)),
+                      c(&quot;TestName&quot;, &quot;LowerLimit&quot;, &quot;UpperLimit&quot;, &quot;Units&quot;))
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T01_RES&#39;,
+    LowerLimit = NA,
+    UpperLimit = 100,
+    Units = &quot;mOhm&quot;
+  )
+)
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T02_VTH&#39;,
+    LowerLimit = 0.6,
+    UpperLimit = 1.2,
+    Units = &quot;Volts&quot;
+  )
+)
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T03_IOFF&#39;,
+    LowerLimit = NA,
+    UpperLimit = 1e-7,
+    Units = &quot;Amps&quot;
+  )
+)
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T04_IG_3V&#39;,
+    LowerLimit = NA,
+    UpperLimit = 5e-4,
+    Units = &quot;Amps&quot;
+  )
+)
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T05_IG_4V&#39;,
+    LowerLimit = NA,
+    UpperLimit = 5e-4,
+    Units = &quot;Amps&quot;
+  )
+)
+df_limits &lt;- rbind(
+  df_limits,
+  data.frame(
+    TestName = &#39;T06_IG_5V&#39;,
+    LowerLimit = NA,
+    UpperLimit = 5e-4,
+    Units = &quot;Amps&quot;
+  )
+)
+
+# Generate a pretty table from the data frame
+kable(df_limits) %&gt;%
+  kable_styling(
+    bootstrap_options = &quot;striped&quot;,
+    full_width = F,
+    position = &quot;center&quot;
+  ) %&gt;%
+  footnote(general = &#39;NA: Limit Not Applicable&#39;)</code></pre>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;border-bottom: 0;">
+<thead>
+<tr>
+<th style="text-align:left;">
+TestName
+</th>
+<th style="text-align:right;">
+LowerLimit
+</th>
+<th style="text-align:right;">
+UpperLimit
+</th>
+<th style="text-align:left;">
+Units
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+T01_RES
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1.0e+02
+</td>
+<td style="text-align:left;">
+mOhm
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T02_VTH
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+<td style="text-align:right;">
+1.2e+00
+</td>
+<td style="text-align:left;">
+Volts
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T03_IOFF
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1.0e-07
+</td>
+<td style="text-align:left;">
+Amps
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T04_IG_3V
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+5.0e-04
+</td>
+<td style="text-align:left;">
+Amps
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T05_IG_4V
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+5.0e-04
+</td>
+<td style="text-align:left;">
+Amps
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+T06_IG_5V
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+5.0e-04
+</td>
+<td style="text-align:left;">
+Amps
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<td style="padding: 0; " colspan="100%">
+<span style="font-style: italic;">Note: </span>
+</td>
+</tr>
+<tr>
+<td style="padding: 0; " colspan="100%">
+<sup></sup> NA: Limit Not Applicable
+</td>
+</tr>
+</tfoot>
+</table>
+</div>
+<div id="generating-mock-data" class="section level3">
+<h3>Generating mock-data</h3>
+<p>This notebook is based on a <strong>fictitious semiconductor data set</strong> that I have generated. While the general characteristics of the data are realistic, they don’t correspond to any real process/technology.</p>
+<p><strong>Generate a wafer-like X/Y pattern:</strong></p>
+<pre class="r"><code>df_wafer_XY &lt;- expand.grid(X = (-16:16)* 6, Y = (-16:16)*6)
+df_wafer_XY[&#39;radius&#39;] &lt;- sqrt(df_wafer_XY[&#39;X&#39;]**2 + df_wafer_XY[&#39;Y&#39;]**2)
+df_wafer_XY &lt;- df_wafer_XY %&gt;% filter((radius &lt; 100) &amp; (Y &gt;= -90))
+
+# a quick plot
+p &lt;- ggplot(df_wafer_XY, aes(x = X, y = Y)) + 
+  geom_point() + 
+  theme_bw() + 
+  coord_equal()+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+p</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/xy-pattern-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p><strong>Function to generate mock test-data (click on the <em>Code</em> button below)</strong></p>
+<pre class="r"><code>generate_wafer_data &lt;-
+  function(df_waferXY,
+           LotID = &#39;tmp&#39;,
+           Wafers = c(1),
+           rMean = 80,
+           radialFactor = 0.3,
+           rSD = 5,
+           vMean = 0.75,
+           vSD = 0.05,
+           ioffMean = -8) {
+    df &lt;- df_wafer_XY[rep(seq_len(nrow(df_wafer_XY)), length(Wafers)),]
+    df[&#39;LotID&#39;] &lt;- LotID
+    df[&#39;Wafer&#39;] &lt;- rep(Wafers, each = nrow(df_waferXY))
+    
+    # Generate normally distributed data with additional component increasing with radius
+    df[&#39;T01_RES&#39;] &lt;- ((rnorm(nrow(df), rMean, rSD) *
+                         (1 + radialFactor * (df[&#39;radius&#39;] / max(
+                           df[&#39;radius&#39;]
+                         )) ** 2)) +
+                        ((rnorm(nrow(
+                          df
+                        ), 0, rSD / 5) ** 2) *
+                          (1 + radialFactor * (df[&#39;radius&#39;] / max(
+                            df[&#39;radius&#39;]
+                          ))) ** 6))
+    
+    # Hardcoding extreme outliers to simulate machine error codes etc.
+    df[df[&#39;T01_RES&#39;] &gt; 120, &#39;T01_RES&#39;] &lt;- 10000
+    
+    # Generate normally distributed data with additional component increasing with radius
+    df[&#39;T02_VTH&#39;] &lt;- ((rnorm(nrow(df), vMean, vSD) *
+                         (1 + radialFactor * (df[&#39;radius&#39;] / max(
+                           df[&#39;radius&#39;]
+                         )) ** 2)))
+    
+    # The leakages generally tend to vary in orders of magnitude. So, they are simulated as 10^X,
+    # where X is a normally distributed random variable
+    
+    df[&#39;T03_IOFF&#39;] &lt;- 10 ** rnorm(nrow(df), ioffMean, 0.5)
+    df[&#39;T04_IG_3V&#39;] &lt;- 10 ** rnorm(nrow(df),-6, 0.4)
+    df[&#39;T05_IG_4V&#39;] &lt;- 10 ** rnorm(nrow(df),-5, 0.4)
+    df[&#39;T06_IG_5V&#39;] &lt;- 10 ** rnorm(nrow(df),-4, 0.4)
+    
+    # &quot;Pass&quot; column corresponds to die passing all the tests, based on the limits above.
+    df[&#39;Pass&#39;] &lt;- ((df[&#39;T01_RES&#39;] &lt; 100) &amp;
+                     (df[&#39;T02_VTH&#39;] &gt; 0.6) &amp; (df[&#39;T02_VTH&#39;] &lt; 1.2) &amp;
+                     (df[&#39;T03_IOFF&#39;] &lt; 1e-7) &amp;
+                     (df[&#39;T04_IG_3V&#39;] &lt; 5e-4) &amp;
+                     (df[&#39;T05_IG_4V&#39;] &lt; 5e-4) &amp;
+                     (df[&#39;T06_IG_5V&#39;] &lt; 5e-4))
+    return(df)
+    
+  }
+
+# Generate the initial data to be analyzed
+df_baseline &lt;-
+  generate_wafer_data(
+    df_wafer_XY,
+    LotID = &#39;Old_1&#39;,
+    Wafers = (1:6),
+    radialFactor = 0.3,
+    ioffMean = -7.5
+  )</code></pre>
+</div>
+<div id="data-exploration-for-understanding-the-cause-of-low-yield" class="section level3">
+<h3>Data Exploration for understanding the cause of low yield</h3>
+<p>We are told that our current baseline process is yielding low and are tasked with improving the yield. The test data from latest lot (data frame generated in python above), and the test limits (as listed in the table above) are provided. As the technology development team members, we are supposed to come up with ideas and improve the process.</p>
+<p>Since we will be doing all the visualizations in R, let us first copy the dataframe generated in Python into the R environment for easier access. Also display the first few rows of the data as a sample.</p>
+<pre class="r"><code># Display the first few rows as a sample
+df_baseline %&gt;% 
+  select(-any_of(
+  c(&quot;LotID&quot;, &quot;radius&quot;))) %&gt;% 
+  head() %&gt;% 
+  mutate_if(is.numeric, funs(as.character(signif(., 3)))) %&gt;% 
+  kable() %&gt;% 
+  kable_styling(
+    bootstrap_options = &quot;striped&quot;,
+    full_width = F,
+    position = &quot;center&quot;
+  )</code></pre>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+X
+</th>
+<th style="text-align:left;">
+Y
+</th>
+<th style="text-align:left;">
+Wafer
+</th>
+<th style="text-align:left;">
+T01_RES
+</th>
+<th style="text-align:left;">
+T02_VTH
+</th>
+<th style="text-align:left;">
+T03_IOFF
+</th>
+<th style="text-align:left;">
+T04_IG_3V
+</th>
+<th style="text-align:left;">
+T05_IG_4V
+</th>
+<th style="text-align:left;">
+T06_IG_5V
+</th>
+<th style="text-align:left;">
+Pass
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+-42
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+114
+</td>
+<td style="text-align:left;">
+1.09
+</td>
+<td style="text-align:left;">
+3.6e-09
+</td>
+<td style="text-align:left;">
+8.04e-07
+</td>
+<td style="text-align:left;">
+0.000104
+</td>
+<td style="text-align:left;">
+0.00013
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+-36
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+97.6
+</td>
+<td style="text-align:left;">
+0.959
+</td>
+<td style="text-align:left;">
+4.87e-08
+</td>
+<td style="text-align:left;">
+4.02e-07
+</td>
+<td style="text-align:left;">
+3.7e-06
+</td>
+<td style="text-align:left;">
+3.98e-05
+</td>
+<td style="text-align:left;">
+TRUE
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+-30
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+106
+</td>
+<td style="text-align:left;">
+0.889
+</td>
+<td style="text-align:left;">
+1.47e-07
+</td>
+<td style="text-align:left;">
+1.2e-06
+</td>
+<td style="text-align:left;">
+8.88e-06
+</td>
+<td style="text-align:left;">
+0.000116
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+-24
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+102
+</td>
+<td style="text-align:left;">
+0.966
+</td>
+<td style="text-align:left;">
+1.21e-08
+</td>
+<td style="text-align:left;">
+3.25e-07
+</td>
+<td style="text-align:left;">
+4.01e-06
+</td>
+<td style="text-align:left;">
+0.000237
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+-18
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+108
+</td>
+<td style="text-align:left;">
+1.01
+</td>
+<td style="text-align:left;">
+8.36e-08
+</td>
+<td style="text-align:left;">
+1.24e-06
+</td>
+<td style="text-align:left;">
+6.51e-06
+</td>
+<td style="text-align:left;">
+4.21e-05
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+-12
+</td>
+<td style="text-align:left;">
+-90
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+119
+</td>
+<td style="text-align:left;">
+0.886
+</td>
+<td style="text-align:left;">
+1.65e-07
+</td>
+<td style="text-align:left;">
+1.82e-06
+</td>
+<td style="text-align:left;">
+2.11e-06
+</td>
+<td style="text-align:left;">
+0.000111
+</td>
+<td style="text-align:left;">
+FALSE
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Let us now check the yields of each wafer as indicated by the ‘Pass’ column value for each die</strong>:</p>
+<pre class="r"><code># Code below calculates the yield by wafer and plots a bar chart.
+# Yield by wafer is calculate by looking at the fraction of dies with &quot;Pass&quot; == TRUE in a wafer
+
+df_baseline %&gt;% 
+  group_by(Wafer) %&gt;% 
+  summarise(Yield_Percentage = sum(Pass)/n()) %&gt;%
+  ggplot(aes(x = Wafer, y = Yield_Percentage)) + 
+  geom_bar(stat = &quot;identity&quot;, fill = &#39;gray50&#39;, width = 0.7) +
+  scale_y_continuous(labels = function(x){scales::percent(x, accuracy = 1)}, expand = expansion(add = c(0,0.05))) +   
+  scale_x_continuous(breaks = (1:6), expand = expansion(0,0)) +
+  geom_text(aes(label = scales::percent(Yield_Percentage, accuracy = 1)), 
+              nudge_y = 0.02, color = &#39;gray50&#39;) +
+  labs(y = &#39;Yield (% of Passing Die)&#39;, x = &#39;Wafer Number&#39;, title = &#39;Yield by Wafer&#39;) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(size = 14, color = &#39;gray40&#39;),
+        axis.text.y = element_blank(),
+        axis.title.x = element_text(size = 16, color = &#39;gray40&#39;),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 16, color = &#39;gray40&#39;, hjust = 0.5),
+        panel.grid = element_blank())</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/yield-by-wafer-0-1.png" width="576" style="display: block; margin: auto;" /></p>
+<p>The next step is to figure out which tests are contributing to the yield loss using the limits provided before. Let us look at what percentage of dies are passing each test in each wafer. It is always good to look at the yields by wafer along with yields for all the wafers together as there could be some wafer to wafer variations in the manufacturing.</p>
+<pre class="r"><code># The test names are assigned as the row names for convenience
+row.names(df_limits) &lt;- df_limits$TestName
+
+# The function below generates a tile plot of yield by category for each wafer
+# taking the test data and test limits as inputs
+
+plot_yield_tile &lt;- function(df_limts, df_test_data) {
+  # Generate a separate Pass/Fail column for each test
+  for (i in 1:nrow(df_limits)) {
+    df_test_data[paste0(&#39;Pass_&#39;, df_limits$TestName[i])] &lt;- ((
+      is.na(df_limits$UpperLimit[i]) |
+        (df_test_data[paste0(df_limits$TestName[i])] &lt; df_limits$UpperLimit[i])
+    )  &amp;
+      (
+        is.na(df_limits$LowerLimit[i]) |
+          (df_test_data[paste0(df_limits$TestName[i])] &gt; df_limits$LowerLimit[i])
+      ))
+  }
+  
+  # Calculate yield grouped by category and wafer
+  df_category_yield &lt;- df_test_data[c(&#39;LotID&#39;, &#39;Wafer&#39;,
+                                      grep(&#39;Pass&#39;, colnames(df_test_data), value = T))] %&gt;%
+    melt(id.vars = c(&#39;LotID&#39;, &#39;Wafer&#39;),
+         variable.name = &#39;Category&#39;) %&gt;%
+    group_by(LotID, Wafer, Category) %&gt;%
+    summarise(Yield_Percent = sum(value) / n(), NumDies = n(), .groups = &#39;drop_last&#39;)
+  
+  # Cleaning up the category names
+  df_category_yield$Category &lt;-
+    gsub(&#39;Pass$&#39;, &#39;Final_Yield&#39;, df_category_yield$Category)
+  
+  # Generating the tile plot
+  pyield &lt;-
+    ggplot(df_category_yield,
+           aes(x = Wafer, y = Category, fill = Yield_Percent)) +
+    geom_tile(color = &#39;black&#39;) +
+    geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 5) +
+    scale_fill_distiller(palette = &#39;Blues&#39;, trans = &quot;reverse&quot;, labels = scales::percent) + 
+    scale_x_continuous(expand = expansion(0, 0), breaks = (1:6)) +
+    scale_y_discrete(expand = expansion(0,0)) + 
+    theme(axis.text = element_text(size = 12),
+          axis.title.x = element_text(size = 16), 
+          axis.title.y = element_blank(),
+          legend.position = &#39;none&#39;,
+          ) +
+    labs(title = &#39;Percentage of dies passing each test in each wafer&#39;)
+  
+  return(pyield)
+}
+
+print(plot_yield_tile(df_limts, df_baseline))</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/yield-heatmap-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p>From the above, we can conclude the following:</p>
+<ul>
+<li>The tests causing major yield loss are T01_RES and T03_IOFF. Other tests have nearly 100% of the die passing the tests</li>
+<li>There is no significant wafer to wafer variation in the yield loss</li>
+<li>Over all yield is running at about 55 to 60% as observed before</li>
+</ul>
+<p>Another way to look at yield losses is to look at a yield pareto, which would list the yield loss categories from most frequent to least frequent.
+Since we already know that there is no significant wafer to wafer variation, we will look at yield loss for the whole lot to give us a bigger picture.</p>
+<pre class="r"><code># The function below genrates a yield pareto chart which displays yield loss categories
+# from most significant to least significant as a bar chart
+
+plot_yield_pareto &lt;- function(df_limts, df_test_data){
+  
+  # Generate a separate Pass/Fail column for each test
+  for(i in 1:nrow(df_limits)){
+    df_test_data[paste0(&#39;Pass_&#39;,df_limits$TestName[i])] &lt;- (
+      (is.na(df_limits$UpperLimit[i]) | 
+         (df_test_data[paste0(df_limits$TestName[i])] &lt; df_limits$UpperLimit[i]))  &amp; 
+      (is.na(df_limits$LowerLimit[i]) | 
+         (df_test_data[paste0(df_limits$TestName[i])] &gt; df_limits$LowerLimit[i]))
+      )
+  }
+  
+  # For the pareto we need to identify the first test which fails for each die
+  # If none of the tests fail, the die is marked as &quot;Pass&quot;
+  df_tests_inverse &lt;- !(df_test_data[grep(&#39;Pass_T&#39;,colnames(df_test_data), value = T)])
+  df_test_data$FirstFailTest &lt;- colnames(df_tests_inverse)[ifelse(
+                              rowSums(df_tests_inverse)==0, NA,max.col(df_tests_inverse, &quot;first&quot;))]
+  df_test_data$FirstFailTest &lt;- ifelse(is.na(df_test_data$FirstFailTest),
+                                       &#39;Pass&#39;,gsub(&#39;Pass_&#39;,&#39;&#39;,df_test_data$FirstFailTest))
+  
+  # Generate the plot
+  pareto &lt;- df_test_data %&gt;% group_by(FirstFailTest) %&gt;% 
+              summarise(Bin_Perc = n()/nrow(df_test_data)) %&gt;%
+              ggplot(aes(x = reorder(FirstFailTest,-Bin_Perc), 
+                         y = Bin_Perc)) +
+              #, fill = FirstFailTest
+              geom_bar(stat = &#39;identity&#39;, fill = &#39;gray50&#39;, width = 0.7) +  
+              geom_text(aes(label = scales::percent(Bin_Perc, accuracy = 1)), nudge_y = 0.02, color = &#39;gray50&#39;) +
+              scale_fill_brewer(type = &#39;qual&#39;) + 
+              labs(fill = &#39;&#39;, x = &#39;First Failed Test or Pass&#39;, 
+                   y = &#39;Bin Percentage&#39;, title = &#39;Failure Bin Category by First Failed Test&#39;) + 
+              scale_y_continuous(expand = expansion(add = c(0, 0.05)), labels = scales::percent) +
+              scale_x_discrete(expand = expansion(0,0)) + 
+              theme_minimal() + 
+              theme(axis.text = element_text(size = 12),
+                    panel.grid = element_blank(),
+                    axis.title.x = element_text(size = 16, color = &#39;gray40&#39;),
+                    axis.text.y = element_blank(),
+                    axis.title.y = element_blank(),
+                    legend.position = &#39;none&#39;,
+                    )
+
+  return(pareto)
+}
+plot_yield_pareto(df_limts, df_baseline)</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/yield-pareto-1.png" width="480" style="display: block; margin: auto;" /></p>
+<p>So far, we have figured out T01_RES, and T03_IOFF were our biggest yield loss factors, but we have not yet looked at the individual measurement data. In the following section, we look at each individual test and how it is distributed around the wafer, for T01 to T06.</p>
+</div>
+<div id="test-data-box-plots-and-wafer-maps" class="section level3">
+<h3>Test data Box-plots and Wafer Maps</h3>
+<p>The following plots show box-plots for each wafer and each test, along with the wafers maps showing how the data is distributed around the wafer. The upper and lower limits for each test (if applicable), are also shown as the red-dashed-lines.</p>
+<p>From the figures below we can observe that:</p>
+<ul>
+<li>T01 and T02 show a center to edge increase in the results.</li>
+<li>T01 has a large number of points above the test limit, which is causing this test to be the major yield loss factor.</li>
+<li>The dies with high T01 values are near the edges, while the dies with high T03 values are more randomly distributed.</li>
+</ul>
+<pre class="r"><code># changing the wafer variable from numeric to factor for better formatting
+df_baseline$Wafer &lt;- as.factor(df_baseline$Wafer)
+
+# loop through the test data columns and generate one plot for each test
+for (col in grep(&#39;T0&#39;, colnames(df_baseline), value = T)) {
+  # automatically determine the limits to be used for Y-axis
+  # this is to exclude outliers and zoom to a sensible window
+  ylim1 &lt;-
+    boxplot.stats(df_baseline[, col], coef = 1.6)$stats[c(1, 5)]
+  ybox_min &lt;-
+    min(ylim1[1], df_limits[col, &#39;LowerLimit&#39;] * 0.8, na.rm = T)
+  ybox_max &lt;-
+    max(ylim1[2], df_limits[col, &#39;UpperLimit&#39;] * 1.2, na.rm = T)
+  
+  pbox &lt;- ggplot(df_baseline, aes_string(y = col, x = &#39;Wafer&#39;)) +
+    geom_boxplot(outlier.alpha = 0) +
+    geom_jitter(
+      aes(color = &#39;gray&#39;),
+      alpha = 0.2,
+      size = 2,
+      width = 0.2,
+      show.legend = FALSE
+    ) +
+    facet_grid( ~ Wafer, scales = &#39;free_x&#39;, labeller = label_both) +
+    
+    # apply the automatic Y-axis limits from above
+    coord_cartesian(ylim = c(ybox_min, ybox_max)) +
+    
+    # add lines corresponding to the upper and lower test limits
+    geom_hline(yintercept = df_limits[col, &#39;LowerLimit&#39;],
+               color = &#39;red&#39;,
+               linetype = 2) +
+    geom_hline(yintercept = df_limits[col, &#39;UpperLimit&#39;],
+               color = &#39;red&#39;,
+               linetype = 2) +
+    
+    # theme changes for better formatting
+    theme_bw() +
+    theme(
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.ticks.x = element_blank()
+    ) +
+    scale_color_manual(values = c(&#39;gray50&#39;))
+  
+  
+  # currents are better displayed in log-scale on the Y-axis
+  if (grepl(&#39;_I&#39;, col)) {
+    pbox &lt;- pbox + scale_y_log10()
+  }
+  
+  pmap &lt;- ggplot(df_baseline, aes(x = X, y = Y)) +
+    geom_tile(color = &#39;gray&#39;, aes_string(fill = col)) +
+    facet_grid( ~ Wafer, scales = &#39;free_x&#39;, labeller = label_both) +
+    scale_fill_viridis_c(option = &#39;plasma&#39;,
+                         limits = ylim1, 
+                         oob = squish,
+                         direction = -1
+                         ) + 
+    theme_bw() +
+    theme(strip.text = element_blank(),
+          axis.text.x = element_text(angle = 45, vjust = 0.5))
+  
+  p_legend &lt;-
+    ggarrange(
+      get_legend(pmap),
+      ggplot() + theme_void(),
+      nrow = 2,
+      heights = c(2, 1)
+    )
+  pmap &lt;- pmap + theme(legend.position = &#39;none&#39;)
+  
+  
+  # Print one header per graph (useful when automating reports)
+  cat(&#39;###  &#39;, col, &#39;\n\n&#39;)
+  print(
+    ggarrange(
+      pbox,
+      ggplot() + theme_void(),
+      pmap,
+      p_legend,
+      ncol = 2,
+      nrow = 2,
+      heights = c(2, 1),
+      widths = c(6, 1),
+      align = &#39;v&#39;
+    )
+  )
+  cat(&#39; \n\n&#39;)
+}</code></pre>
+</div>
+<div id="t01_res" class="section level3">
+<h3>T01_RES</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-1.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t02_vth" class="section level3">
+<h3>T02_VTH</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-2.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t03_ioff" class="section level3">
+<h3>T03_IOFF</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-3.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t04_ig_3v" class="section level3">
+<h3>T04_IG_3V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-4.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t05_ig_4v" class="section level3">
+<h3>T05_IG_4V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-5.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t06_ig_5v" class="section level3">
+<h3>T06_IG_5V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-1-6.png" width="2700" style="display: block; margin: auto;" /></p>
+</div>
+<div id="experiment-design-for-yield-improvement-and-mock-data-generation" class="section level3">
+<h3>Experiment design for yield improvement and mock-data generation</h3>
+<p>Let us assume that the team came up with two ideas to improve the yield:</p>
+<ul>
+<li>Reduce the center to edge non-uniformity by changing the temperature</li>
+<li>Reduce the T01_RES values by changing the strain of a certain film, which may have some other effects</li>
+</ul>
+<p>Ideally we would do a full-factorial experiment design to ensure we will have enough <strong>Power</strong> to draw useful conclusions from the experiment. But for simplicity, let us assume we tried two additional levels of temperature and one additional level of strain in our experiment.</p>
+<p>The following code generates the new data frame with the intended properties using the “generate_wafer_data” function we wrote before.</p>
+<pre class="r"><code># Generate different types of data for each process separately
+df_baseline_POR &lt;- generate_wafer_data(df_wafer_XY, LotID = &#39;Exp_1&#39;, 
+                  Wafers = c(1,5,9), radialFactor = 0.3, ioffMean = -7.5)
+df_process_A1 &lt;- generate_wafer_data(df_wafer_XY, LotID = &#39;Exp_1&#39;, 
+                  Wafers = c(2,6,10), rMean = 80, radialFactor = 0.1, ioffMean = -7.5)
+df_process_A2 &lt;- generate_wafer_data(df_wafer_XY, LotID = &#39;Exp_1&#39;, 
+                  Wafers = c(3,7,11), rMean = 65, radialFactor = 0.8, ioffMean = -7.5)
+df_process_B1 &lt;- generate_wafer_data(df_wafer_XY, LotID = &#39;Exp_1&#39;, 
+                  Wafers = c(4,8,12), rMean = 65, vMean = 0.65, radialFactor = 0.3, ioffMean = -7)
+
+# Assign the process parameters for each process split
+df_baseline_POR &lt;- df_baseline_POR %&gt;% 
+  mutate( Process = &#39;Baseline&#39;, Temp = &#39;Baseline&#39;, Strain = &#39;Baseline&#39;)
+df_process_A1 &lt;- df_process_A1 %&gt;% 
+  mutate( Process = &#39;A1&#39;, Temp = &#39;Higher&#39;, Strain = &#39;Baseline&#39;)
+df_process_A2 &lt;- df_process_A2 %&gt;% 
+  mutate( Process = &#39;A2&#39;, Temp = &#39;Lower&#39;, Strain = &#39;Baseline&#39;)
+df_process_B1 &lt;- df_process_B1 %&gt;% 
+  mutate( Process = &#39;B1&#39;, Temp = &#39;Baseline&#39;, Strain = &#39;Higher&#39;)
+
+# Combine the data into one data frame with 12 wafers
+df_experiment &lt;- bind_rows(df_baseline_POR, df_process_A1, df_process_A2, df_process_B1)</code></pre>
+<p><strong>Here is a table of split conditions for various wafers in our experiment</strong></p>
+<pre class="r"><code>kable(df_experiment %&gt;% group_by(Wafer,Process,Temp,Strain) %&gt;% summarise(.groups = &#39;rowwise&#39;)) %&gt;% 
+  kable_styling(bootstrap_options = &quot;striped&quot;, full_width = F, position = &quot;center&quot;)</code></pre>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:right;">
+Wafer
+</th>
+<th style="text-align:left;">
+Process
+</th>
+<th style="text-align:left;">
+Temp
+</th>
+<th style="text-align:left;">
+Strain
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:left;">
+A1
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:left;">
+A2
+</td>
+<td style="text-align:left;">
+Lower
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:left;">
+B1
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:left;">
+A1
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:left;">
+A2
+</td>
+<td style="text-align:left;">
+Lower
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:left;">
+B1
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:left;">
+A1
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:left;">
+A2
+</td>
+<td style="text-align:left;">
+Lower
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:left;">
+B1
+</td>
+<td style="text-align:left;">
+Baseline
+</td>
+<td style="text-align:left;">
+Higher
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="visualization-improvements-for-analyzing-data-from-multiple-processes" class="section level3">
+<h3>Visualization improvements for analyzing data from multiple processes</h3>
+<p>As we can see, our lot now consists of wafers from 4 different processes, and more efforts are needed to visualize the data effectively.</p>
+<p>For example, if we were to look at the test results “T01_RES” without much customization, it is pretty hard to understand which process conditions are better, even though we already took care of basic things like excluding the outliers etc.</p>
+<div id="bad-visualization-of-the-data-with-a-default-box-plot" class="section level4">
+<h4>Bad visualization of the data with a default box plot:</h4>
+<pre class="r"><code># Box plot with minimal customization
+# Outliers are excluded using a manual zoom on the Y-axis
+pbox &lt;- ggplot(df_experiment, aes_string(y = &#39;T01_RES&#39;, x = &#39;Wafer&#39;)) + 
+          geom_boxplot(outlier.alpha = 0) + 
+          geom_jitter(alpha = 0.2, size = 2, width = 0.2) + 
+          facet_grid(~Wafer+Temp+Strain+Process, labeller = label_both, scales = &#39;free_x&#39;) + 
+          coord_cartesian(ylim = c(60,150)) 
+print(pbox)</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plot-bad-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p><strong>To help visualize the data better for this experiment with multiple variables, I did the following customization to result in more informative visualizations:</strong>
+(some of these features were already implemented in the previous set of box plots).</p>
+<ul>
+<li>Replace the upper “Facet” ribbon with a color-coded grid of factor values for each variable, so that we can tell which process splits are similar and which are not</li>
+<li>Automatically calculate the appropriate Y-range for each variable by using “box plot.stats” function, and also look at the test upper and lower limits</li>
+<li>Add wafer map below each box plot so that we can compare any systematic differences between processes</li>
+<li>Apply log-scale for the currents T04 through T06, as they are expected to vary in orders of magnitude</li>
+</ul>
+<pre class="r"><code># Change Wafer column to factor type for better formatting
+df_experiment$Wafer &lt;- as.factor(df_experiment$Wafer)
+
+# The columns to be used for grouping / faceting
+# This can be customized based on experiment conditions
+grouping_cols &lt;- c(&#39;Temp&#39;, &#39;Strain&#39;, &#39;Process&#39;, &#39;Wafer&#39;)
+facet_formula = as.formula(paste(&quot;~&quot;, paste0(grouping_cols, collapse = &#39;+&#39;)))
+
+# Code below generates a tile plot with experiment variables on Y-axis
+# and various levels of those variables color coded
+# this tile plot replaces the ribbon / strip associated with the facet information
+
+group_table &lt;-
+  df_experiment %&gt;% group_by(.dots = grouping_cols) %&gt;% summarise(.groups = &#39;rowwise&#39;)
+group_table2 &lt;- group_table
+colnames(group_table2) &lt;- paste0(colnames(group_table2), &#39;_tmp1&#39;)
+group_table &lt;- cbind(group_table, group_table2)
+group_table_stack &lt;-
+  melt(group_table, id.vars = grouping_cols, variable.name = &#39;Split&#39;)
+group_table_stack$Split &lt;-
+  factor(gsub(&#39;_tmp1$&#39;, &#39;&#39;, group_table_stack$Split),
+         levels = rev(grouping_cols))
+group_table_stack$value2 &lt;- group_table_stack$value
+group_table_stack$value2[group_table_stack$Split == &#39;Wafer&#39;] &lt;- NA
+p_strip &lt;-
+  ggplot(group_table_stack, aes(x = Wafer, y = Split, label = value)) +
+  geom_tile(aes(fill = value2), color = &#39;black&#39;) +
+  geom_text(size = 4) +
+  facet_grid(facet_formula, scales = &#39;free_x&#39;) +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(
+    legend.key.size = unit(0, &#39;cm&#39;),
+    legend.text = element_text(size = 1, color = &#39;white&#39;),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(size = 10, vjust = 0.5),
+    strip.text = element_blank(),
+    panel.spacing.x = unit(0.05, &quot;lines&quot;),
+    panel.background = element_blank(),
+    plot.margin = margin(0, 0.1,-0.1, 0.1, &quot;cm&quot;),
+    plot.background = element_blank()
+  )  +
+  labs(fill = &#39;&#39;)  +
+  scale_fill_manual(values = get_palette(&#39;Pastel1&#39;, length(unique(
+    group_table_stack$value2
+  ))))
+
+# Loop through the test data columns and generate one plot for each test
+for (col in grep(&#39;T0&#39;, colnames(df_experiment), value = T)) {
+  # Automatically determine the limits to be used for Y-axis
+  # This is to exclude outliers and zoom to a sensible window
+  
+  ylim1 &lt;-
+    boxplot.stats(df_experiment[, col], coef = 1.6)$stats[c(1, 5)]
+  ybox_min &lt;-
+    min(ylim1[1], df_limits[col, &#39;LowerLimit&#39;] * 0.8, na.rm = T)
+  ybox_max &lt;-
+    max(ylim1[2], df_limits[col, &#39;UpperLimit&#39;] * 1.2, na.rm = T)
+  
+  pbox &lt;- ggplot(df_experiment, aes_string(y = col, x = &#39;Wafer&#39;)) +
+    geom_boxplot(outlier.alpha = 0) +
+    
+    # apply the automatic Y-axis limits from above
+    coord_cartesian(ylim = c(ybox_min, ybox_max)) +
+    geom_jitter(alpha = 0.2,
+                size = 2,
+                color = &#39;gray50&#39;,
+                width = 0.2) +
+    
+    # faceting / grouping based on the chosen categories
+    facet_grid(facet_formula, scales = &#39;free_x&#39;) +
+    
+    # add lines corresponding to the upper and lower test limits
+    geom_hline(yintercept = df_limits[col, &#39;LowerLimit&#39;],
+               color = &#39;red&#39;,
+               linetype = 2) +
+    geom_hline(yintercept = df_limits[col, &#39;UpperLimit&#39;],
+               color = &#39;red&#39;,
+               linetype = 2) +
+    
+    # theme settings for better formatting
+    theme_bw() +
+    theme(
+      strip.text = element_blank(),
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.y = element_text(size = 10),
+      panel.spacing.x = unit(0.05, &quot;lines&quot;),
+      panel.border = element_rect(
+        color = &#39;gray&#39;,
+        fill = NA,
+        size = 0.5
+      ),
+      plot.margin = margin(-0.1, 0.1,-0.1, 0.1, &#39;cm&#39;),
+      axis.ticks.x = element_blank()
+    )
+  
+  
+  
+  # currents are better displayed in log-scale on Y-axis
+  if (grepl(&#39;_I&#39;, col)) {
+    pbox &lt;- pbox + scale_y_log10()
+  }
+  
+  pmap &lt;-
+    ggplot(df_experiment, aes(x = X, y = Y)) + geom_tile(color = &#39;gray&#39;, aes_string(fill = col)) +
+    facet_grid(facet_formula, scales = &#39;free_x&#39;) +
+    scale_fill_viridis_c(
+      option = &#39;plasma&#39;,
+      limits = ylim1,
+      oob = squish,
+      direction = -1
+    ) +
+    scale_x_continuous(breaks = c(-50, 0, 50)) +
+    theme_bw() + 
+    theme(
+      strip.text = element_blank(),
+      #axis.text.x = element_text(angle = 270, hjust = 0),
+      plot.margin = margin(0, 0.1, 0, 0.1, &#39;cm&#39;),
+      panel.spacing.x = unit(0.05, &quot;lines&quot;),
+      panel.border = element_rect(
+        color = &#39;gray&#39;,
+        fill = NA,
+        size = 0.5
+      )
+    )
+  
+  
+  p_legend &lt;-
+    ggarrange(
+      get_legend(pmap),
+      ggplot() + theme_void(),
+      nrow = 2,
+      heights = c(2, 1)
+    )
+  p_strip &lt;- p_strip + theme(legend.position = &#39;none&#39;)
+  pmap &lt;- pmap + theme(legend.position = &#39;none&#39;)
+  
+  
+  # print one header per graph (useful when automating reports)
+  cat(&#39;###  &#39;, col, &#39;\n\n&#39;)
+  
+  # Use ggrrange to combine multiple sections of the plot
+  print(
+    ggarrange(
+      p_strip,
+      ggplot() + theme_void(),
+      pbox,
+      ggplot() + theme_void(),
+      pmap,
+      p_legend,
+      nrow = 3,
+      ncol = 2,
+      heights = c(2, 2.5, 1.5),
+      widths = c(9, 1),
+      align = &#39;v&#39;
+    )
+  )
+  
+  cat(&#39; \n\n&#39;)
+}</code></pre>
+</div>
+</div>
+<div id="t01_res-1" class="section level3">
+<h3>T01_RES</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-1.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t02_vth-1" class="section level3">
+<h3>T02_VTH</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-2.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t03_ioff-1" class="section level3">
+<h3>T03_IOFF</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-3.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t04_ig_3v-1" class="section level3">
+<h3>T04_IG_3V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-4.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t05_ig_4v-1" class="section level3">
+<h3>T05_IG_4V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-5.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="t06_ig_5v-1" class="section level3">
+<h3>T06_IG_5V</h3>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/box-plots-better-6.png" width="3600" style="display: block; margin: auto;" /></p>
+</div>
+<div id="observations-from-the-experiment" class="section level3">
+<h3>Observations from the experiment</h3>
+<p>From the above we data, we can see the following:</p>
+<ul>
+<li>Processes “A1” and “B1” have significantly improved the T01_RES distributions</li>
+<li>However process “B1” seems to have degraded the “T03_IOFF” distributions by moving them further beyond the test limit</li>
+<li>Process “A2” seems to have poor results for T02 and T01.</li>
+<li>Overall, process “A1” seems to be our best bet for yield improvement</li>
+</ul>
+<p>We can notice the same in the yield by wafer/process tile-plot below, where the last row indicates that the wafers with Process-A1 have the best yields (&gt; 75%)</p>
+<pre class="r"><code># The function below generates a tile plot of yield by category for each wafer
+# taking the test data and test limits as inputs
+plot_yield_tile2 &lt;- function(df_limits, df_test_data) {
+  # Generate a separate Pass/Fail column for each test
+  for (i in 1:nrow(df_limits)) {
+    df_test_data[paste0(&#39;Pass_&#39;, df_limits$TestName[i])] &lt;- ((
+      is.na(df_limits$UpperLimit[i]) |
+        (df_test_data[paste0(df_limits$TestName[i])] &lt; df_limits$UpperLimit[i])
+    )  &amp;
+      (
+        is.na(df_limits$LowerLimit[i]) |
+          (df_test_data[paste0(df_limits$TestName[i])] &gt; df_limits$LowerLimit[i])
+      ))
+  }
+  
+  # Calculate yield grouped by category and wafer
+  df_category_yield &lt;- df_test_data[c(grouping_cols,
+                                      grep(&#39;Pass&#39;, colnames(df_test_data), value = T))] %&gt;%
+    melt(id.vars = c(grouping_cols),
+         variable.name = &#39;Category&#39;) %&gt;%
+    group_by(.dots = c(grouping_cols, &#39;Category&#39;)) %&gt;%
+    summarise(
+      Yield_Percent = sum(value) / n(),
+      NumDies = n(),
+      .groups = &#39;rowwise&#39;
+    )
+  
+  # Cleaning up the category names
+  df_category_yield$Category &lt;-
+    gsub(&#39;Pass$&#39;, &#39;Final_Yield&#39;, df_category_yield$Category)
+  
+  # Generating the tile plot
+  pyield &lt;-
+    ggplot(df_category_yield,
+           aes(x = Wafer, y = Category, fill = Yield_Percent)) +
+    geom_tile(color = &#39;black&#39;) +
+    facet_grid(facet_formula, scales = &#39;free_x&#39;) +
+    geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 4) +
+    scale_fill_distiller(palette = &#39;Blues&#39;,
+                         trans = &quot;reverse&quot;,
+                         labels = scales::percent) +
+    theme_bw() +
+    scale_x_discrete(expand = expansion(0, 0)) +
+    scale_y_discrete(expand = expansion(0, 0)) +
+    theme(
+      strip.text = element_blank(),
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.y = element_text(size = 10),
+      panel.spacing.x = unit(0.05, &quot;lines&quot;),
+      panel.border = element_rect(
+        color = &#39;gray&#39;,
+        fill = NA,
+        size = 0.5
+      ),
+      plot.margin = margin(-0.1, 0.1, 0, 0.1, &#39;cm&#39;),
+      axis.ticks.x = element_blank()
+    )
+  
+  p_legend &lt;- ggarrange(
+    get_legend(pyield),
+    ggplot() + theme_void(),
+    nrow = 2,
+    heights = c(2, 1)
+  )
+  
+  p_strip &lt;- p_strip + theme(legend.position = &#39;none&#39;)
+  pyield &lt;- pyield + theme(legend.position = &#39;none&#39;)
+  
+  
+  # Use ggrrange to combine multiple sections of the plot
+  return(
+    ggarrange(
+      p_strip,
+      ggplot() + theme_void(),
+      pyield,
+      p_legend,
+      nrow = 2,
+      ncol = 2,
+      heights = c(1, 2),
+      widths = c(9, 1),
+      align = &#39;v&#39;
+    )
+  )
+}
+
+plot_yield_tile2(df_limits, df_experiment)</code></pre>
+<p><img src="/post/2022-03-12-semiconductor-data-analysis-example_files/figure-html/yield-tile-2-1.png" width="1152" style="display: block; margin: auto;" /></p>
+</div>
+<div id="statistical-verification-of-process-improvement" class="section level3">
+<h3>Statistical verification of process improvement</h3>
+<p>So far we have qualitatively observed that the Process-A1 improved parameters, but ideally we would like to use a more scientific way of determining if Process-A1 made a significant difference.</p>
+<p>We can use an independent t-test to check if the means of two processes are statistically different for each test and the yield (column: “Pass”) using the following code.</p>
+<p>These results are also consistent with the yield improvement observations from above.</p>
+<pre class="r"><code># Include only the baseline process and process A1 for easier comparison.
+df_Baseline_and_ProcessA1 &lt;- subset(df_experiment, Process %in% c(&quot;Baseline&quot;,&quot;A1&quot;)) 
+
+# Exclude outliers T01_RES (T01_RES &gt; 1000) to make sure results are not skewed by outliers
+df_Baseline_and_ProcessA1 &lt;- subset(df_Baseline_and_ProcessA1, T01_RES &lt; 1000)
+
+# Apply Welch Two Sample t-test to each column of interest
+lapply(df_Baseline_and_ProcessA1[,grep(&#39;T0|Pass&#39;,colnames(df_Baseline_and_ProcessA1), value = T)], 
+       function(x) t.test(x ~ df_Baseline_and_ProcessA1$Process))</code></pre>
+<pre><code>## $T01_RES
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = -40.075, df = 4230.8, p-value &lt; 2.2e-16
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -9.652142 -8.751786
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##               85.32041               94.52237 
+## 
+## 
+## $T02_VTH
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = -36.378, df = 4356.2, p-value &lt; 2.2e-16
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -0.07681972 -0.06896317
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##              0.7868826              0.8597740 
+## 
+## 
+## $T03_IOFF
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = -0.38863, df = 5124.9, p-value = 0.6976
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -6.380262e-09  4.269163e-09
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##           6.092094e-08           6.197649e-08 
+## 
+## 
+## $T04_IG_3V
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = 0.95221, df = 5138.5, p-value = 0.341
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -4.247193e-08  1.226970e-07
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##           1.499237e-06           1.459125e-06 
+## 
+## 
+## $T05_IG_4V
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = -1.8021, df = 5086, p-value = 0.07159
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -1.931247e-06  8.128421e-08
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##           1.500591e-05           1.593090e-05 
+## 
+## 
+## $T06_IG_5V
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = 0.34045, df = 5146.5, p-value = 0.7335
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  -7.753414e-06  1.101228e-05
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##           0.0001526389           0.0001510095 
+## 
+## 
+## $Pass
+## 
+##  Welch Two Sample t-test
+## 
+## data:  x by df_Baseline_and_ProcessA1$Process
+## t = 17.711, df = 4923.6, p-value &lt; 2.2e-16
+## alternative hypothesis: true difference in means between group A1 and group Baseline is not equal to 0
+## 95 percent confidence interval:
+##  0.1987538 0.2482310
+## sample estimates:
+##       mean in group A1 mean in group Baseline 
+##              0.7926267              0.5691344</code></pre>
+</div>
+<div id="conclusions" class="section level3">
+<h3>Conclusions</h3>
+<p>In summary, this example demonstrates various data analysis, data visualization, and hypothesis testing techniques applied to a sample semiconductor test data-set.</p>
+</div>

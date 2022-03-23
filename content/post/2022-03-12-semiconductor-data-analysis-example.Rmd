@@ -32,14 +32,15 @@ In this example, we illustrate a hypothetical case where a team has an yield iss
 knitr::opts_chunk$set(echo = TRUE, 
                       warning = FALSE, 
                       fig.align = 'center', 
-                      fig.width = 10)
-#                     fig.path = "static"
+                      cache = TRUE,
+                      fig.width = 9)
 library(tidyverse)
 library(scales)
 library(kableExtra)
 library(reshape2)
 library(ggpubr)
 library(ggrepel)
+library(cowplot)
 ```
 
 In this example, each part is tested with 6 tests (T01 to T06). A good die is defined as a die that passes all 6 tests. The passing criteria for the tests are as displayed in the table below. 
@@ -104,14 +105,14 @@ df_limits <- rbind(
   )
 )
 
-# Generate a pretty table from the dataframe
+# Generate a pretty table from the data frame
 kable(df_limits) %>%
   kable_styling(
     bootstrap_options = "striped",
     full_width = F,
     position = "center"
   ) %>%
-  footnote(general = 'NA ==> Limit Not Applicable')
+  footnote(general = 'NA: Limit Not Applicable')
 ```
 
 
@@ -136,7 +137,7 @@ p <- ggplot(df_wafer_XY, aes(x = X, y = Y)) +
 p
 ```
 
-**Function to generate mock test-data:**
+**Function to generate mock test-data (click on the *Code* button below)**
 ```{r generate-data-function}
 generate_wafer_data <-
   function(df_waferXY,
@@ -213,9 +214,12 @@ Since we will be doing all the visualizations in R, let us first copy the datafr
 
 ```{r sample-data-display}
 # Display the first few rows as a sample
-kable(head(df_baseline %>% select(-any_of(
-  c("LotID", "radius")
-)))) %>%
+df_baseline %>% 
+  select(-any_of(
+  c("LotID", "radius"))) %>% 
+  head() %>% 
+  mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>% 
+  kable() %>% 
   kable_styling(
     bootstrap_options = "striped",
     full_width = F,
@@ -226,7 +230,7 @@ kable(head(df_baseline %>% select(-any_of(
 
 **Let us now check the yields of each wafer as indicated by the 'Pass' column value for each die**:
 
-```{r yield-by-wafer-0}
+```{r yield-by-wafer-0, fig.width=6}
 # Code below calculates the yield by wafer and plots a bar chart.
 # Yield by wafer is calculate by looking at the fraction of dies with "Pass" == TRUE in a wafer
 
@@ -234,11 +238,11 @@ df_baseline %>%
   group_by(Wafer) %>% 
   summarise(Yield_Percentage = sum(Pass)/n()) %>%
   ggplot(aes(x = Wafer, y = Yield_Percentage)) + 
-  geom_bar(stat = "identity", fill = 'gray50') +
-  scale_y_continuous(labels = function(x){scales::percent(x, accuracy = 1)}, expand = expansion(0,0)) + 
+  geom_bar(stat = "identity", fill = 'gray50', width = 0.7) +
+  scale_y_continuous(labels = function(x){scales::percent(x, accuracy = 1)}, expand = expansion(add = c(0,0.05))) +   
   scale_x_continuous(breaks = (1:6), expand = expansion(0,0)) +
   geom_text(aes(label = scales::percent(Yield_Percentage, accuracy = 1)), 
-              nudge_y = -0.04, color = 'white') +
+              nudge_y = 0.02, color = 'gray50') +
   labs(y = 'Yield (% of Passing Die)', x = 'Wafer Number', title = 'Yield by Wafer') +
   theme_minimal() + 
   theme(axis.text.x = element_text(size = 14, color = 'gray40'),
@@ -277,7 +281,7 @@ plot_yield_tile <- function(df_limts, df_test_data) {
     melt(id.vars = c('LotID', 'Wafer'),
          variable.name = 'Category') %>%
     group_by(LotID, Wafer, Category) %>%
-    summarise(Yield_Percent = sum(value) / n(), NumDies = n(), .groups = 'rowwise')
+    summarise(Yield_Percent = sum(value) / n(), NumDies = n(), .groups = 'drop_last')
   
   # Cleaning up the category names
   df_category_yield$Category <-
@@ -289,9 +293,6 @@ plot_yield_tile <- function(df_limts, df_test_data) {
            aes(x = Wafer, y = Category, fill = Yield_Percent)) +
     geom_tile(color = 'black') +
     geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 5) +
-    # scale_fill_viridis_c(option = 'magma') +
-    # scale_fill_gradient(low = 'white', high = 'deepskyblue',
-    #                     limits = c(0,1), labels = scales::percent) +
     scale_fill_distiller(palette = 'Blues', trans = "reverse", labels = scales::percent) + 
     scale_x_continuous(expand = expansion(0, 0), breaks = (1:6)) +
     scale_y_discrete(expand = expansion(0,0)) + 
@@ -310,14 +311,14 @@ print(plot_yield_tile(df_limts, df_baseline))
 
 From the above, we can conclude the following:
 
-* The tests causing major yield loss are T01_RES and T03_IOFF. Other tests have nearly 100% die passing the tests
+* The tests causing major yield loss are T01_RES and T03_IOFF. Other tests have nearly 100% of the die passing the tests
 * There is no significant wafer to wafer variation in the yield loss
 * Over all yield is running at about 55 to 60% as observed before
 
 Another way to look at yield losses is to look at a yield pareto, which would list the yield loss categories from most frequent to least frequent.
 Since we already know that there is no significant wafer to wafer variation, we will look at yield loss for the whole lot to give us a bigger picture. 
 
-```{r yield-pareto, fig.width=8}
+```{r yield-pareto, fig.width=5}
 # The function below genrates a yield pareto chart which displays yield loss categories
 # from most significant to least significant as a bar chart
 
@@ -345,12 +346,23 @@ plot_yield_pareto <- function(df_limts, df_test_data){
   pareto <- df_test_data %>% group_by(FirstFailTest) %>% 
               summarise(Bin_Perc = n()/nrow(df_test_data)) %>%
               ggplot(aes(x = reorder(FirstFailTest,-Bin_Perc), 
-                         y = Bin_Perc, fill = FirstFailTest)) + 
-              geom_bar(stat = 'identity') + scale_y_continuous(labels = scales::percent) + 
-              geom_text(aes(label = scales::percent(Bin_Perc, accuracy = 1)), nudge_y = 0.02) +
+                         y = Bin_Perc)) +
+              #, fill = FirstFailTest
+              geom_bar(stat = 'identity', fill = 'gray50', width = 0.7) +  
+              geom_text(aes(label = scales::percent(Bin_Perc, accuracy = 1)), nudge_y = 0.02, color = 'gray50') +
               scale_fill_brewer(type = 'qual') + 
               labs(fill = '', x = 'First Failed Test or Pass', 
-                   y = 'Bin Percentage', title = 'Failure Bin Category by First Failed Test')
+                   y = 'Bin Percentage', title = 'Failure Bin Category by First Failed Test') + 
+              scale_y_continuous(expand = expansion(add = c(0, 0.05)), labels = scales::percent) +
+              scale_x_discrete(expand = expansion(0,0)) + 
+              theme_minimal() + 
+              theme(axis.text = element_text(size = 12),
+                    panel.grid = element_blank(),
+                    axis.title.x = element_text(size = 16, color = 'gray40'),
+                    axis.text.y = element_blank(),
+                    axis.title.y = element_blank(),
+                    legend.position = 'none',
+                    )
 
   return(pareto)
 }
@@ -360,7 +372,7 @@ plot_yield_pareto(df_limts, df_baseline)
 
 So far, we have figured out T01_RES, and T03_IOFF were our biggest yield loss factors, but we have not yet looked at the individual measurement data. In the following section, we look at each individual test and how it is distributed around the wafer, for T01 to T06.
 
-## Test data Box-plots and Wafer Maps
+### Test data Box-plots and Wafer Maps
 
 The following plots show box-plots for each wafer and each test, along with the wafers maps showing how the data is distributed around the wafer. The upper and lower limits for each test (if applicable), are also shown as the red-dashed-lines. 
 
@@ -372,62 +384,108 @@ From the figures below we can observe that:
 
 ```{r box-plots-1, dpi = 300, results='asis', warning = F}
 
+
 # changing the wafer variable from numeric to factor for better formatting
 df_baseline$Wafer <- as.factor(df_baseline$Wafer)
 
 # loop through the test data columns and generate one plot for each test
-for(col in grep('T0',colnames(df_baseline),value = T)){
- 
+for (col in grep('T0', colnames(df_baseline), value = T)) {
   # automatically determine the limits to be used for Y-axis
   # this is to exclude outliers and zoom to a sensible window
-  ylim1 <- boxplot.stats(df_baseline[,col], coef = 1.6)$stats[c(1,5)]
-  ybox_min <- min(ylim1[1],df_limits[col,'LowerLimit']*0.8, na.rm = T)
-  ybox_max <- max(ylim1[2],df_limits[col,'UpperLimit']*1.2, na.rm = T)
+  ylim1 <-
+    boxplot.stats(df_baseline[, col], coef = 1.6)$stats[c(1, 5)]
+  ybox_min <-
+    min(ylim1[1], df_limits[col, 'LowerLimit'] * 0.8, na.rm = T)
+  ybox_max <-
+    max(ylim1[2], df_limits[col, 'UpperLimit'] * 1.2, na.rm = T)
   
-  pbox <- ggplot(df_baseline, aes_string(y = col, x = 'Wafer', color = 'Wafer')) + 
-          geom_boxplot(outlier.alpha = 0) + 
-          geom_jitter(alpha = 0.2, size = 2, width = 0.2) + 
-          facet_grid(~Wafer, scales = 'free_x', labeller = label_both) +
+  pbox <- ggplot(df_baseline, aes_string(y = col, x = 'Wafer')) +
+    geom_boxplot(outlier.alpha = 0) +
+    geom_jitter(
+      aes(color = 'gray'),
+      alpha = 0.2,
+      size = 2,
+      width = 0.2,
+      show.legend = FALSE
+    ) +
+    facet_grid( ~ Wafer, scales = 'free_x', labeller = label_both) +
     
-          # apply the automatic Y-axis limits from above 
-          coord_cartesian(ylim = c(ybox_min,ybox_max)) + 
+    # apply the automatic Y-axis limits from above
+    coord_cartesian(ylim = c(ybox_min, ybox_max)) +
     
-          # add lines corresponding to the upper and lower test limits 
-          geom_hline(yintercept = df_limits[col,'LowerLimit'], color = 'red', linetype = 2) + 
-          geom_hline(yintercept = df_limits[col,'UpperLimit'], color = 'red', linetype = 2) + 
+    # add lines corresponding to the upper and lower test limits
+    geom_hline(yintercept = df_limits[col, 'LowerLimit'],
+               color = 'red',
+               linetype = 2) +
+    geom_hline(yintercept = df_limits[col, 'UpperLimit'],
+               color = 'red',
+               linetype = 2) +
     
-          # theme changes for better formatting
-          theme(axis.text.x = element_blank(), axis.title.x = element_blank(), 
-                axis.ticks.x = element_blank())
+    # theme changes for better formatting
+    theme_bw() +
+    theme(
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.ticks.x = element_blank()
+    ) +
+    scale_color_manual(values = c('gray50'))
   
-  # currents are better displayed in log-scale on the Y-axis 
-  if(grepl('_I',col)){
-    pbox <- pbox + scale_y_log10()  
+  
+  # currents are better displayed in log-scale on the Y-axis
+  if (grepl('_I', col)) {
+    pbox <- pbox + scale_y_log10()
   }
   
-  pmap <- ggplot(df_baseline, aes(x = X, y = Y)) + 
-          geom_tile(color='gray', aes_string(fill = col)) + 
-          facet_grid(~Wafer, scales = 'free_x', labeller = label_both) + 
-          scale_fill_gradient(low = 'green', high = 'red', limits = ylim1, oob = squish) +
-          theme(strip.text = element_blank(), axis.text.x = element_text(angle = 45, vjust = 0.5))
+  pmap <- ggplot(df_baseline, aes(x = X, y = Y)) +
+    geom_tile(color = 'gray', aes_string(fill = col)) +
+    facet_grid( ~ Wafer, scales = 'free_x', labeller = label_both) +
+    scale_fill_viridis_c(option = 'plasma',
+                         limits = ylim1, 
+                         oob = squish,
+                         direction = -1
+                         ) + 
+    theme_bw() +
+    theme(strip.text = element_blank(),
+          axis.text.x = element_text(angle = 45, vjust = 0.5))
+  
+  p_legend <-
+    ggarrange(
+      get_legend(pmap),
+      ggplot() + theme_void(),
+      nrow = 2,
+      heights = c(2, 1)
+    )
+  pmap <- pmap + theme(legend.position = 'none')
   
   
   # Print one header per graph (useful when automating reports)
   cat('###  ', col, '\n\n')
-  print(ggarrange(pbox, pmap, nrow = 2, heights = c(2,1), align = 'v'))
+  print(
+    ggarrange(
+      pbox,
+      ggplot() + theme_void(),
+      pmap,
+      p_legend,
+      ncol = 2,
+      nrow = 2,
+      heights = c(2, 1),
+      widths = c(6, 1),
+      align = 'v'
+    )
+  )
   cat(' \n\n')
 }
 
 ```
 
-# Experiment design for yield improvement and mock-data generation
+### Experiment design for yield improvement and mock-data generation
 
 Let us assume that the team came up with two ideas to improve the yield:
 
 * Reduce the center to edge non-uniformity by changing the temperature
 * Reduce the T01_RES values by changing the strain of a certain film, which may have some other effects
 
-Ideally we would do a full-factorial experiment design to ensure we will have enough "Power" to draw useful conclusions from the experiment. But for simplicity, let us assume we tried two additional levels of temperature and one additional level of strain in our experiment. 
+Ideally we would do a full-factorial experiment design to ensure we will have enough **Power** to draw useful conclusions from the experiment. But for simplicity, let us assume we tried two additional levels of temperature and one additional level of strain in our experiment. 
 
 The following code generates the new data frame with the intended properties using the "generate_wafer_data" function we wrote before.
 
@@ -454,21 +512,24 @@ df_process_A2 <- df_process_A2 %>%
 df_process_B1 <- df_process_B1 %>% 
   mutate( Process = 'B1', Temp = 'Baseline', Strain = 'Higher')
 
-# Combine the data into one dataframe with 12 wafers
+# Combine the data into one data frame with 12 wafers
 df_experiment <- bind_rows(df_baseline_POR, df_process_A1, df_process_A2, df_process_B1)
 ```
 
 **Here is a table of split conditions for various wafers in our experiment**
+
 ```{r new-data-display}
-kable(df_experiment %>% group_by(Wafer,Process,Temp,Strain) %>% summarise()) %>% 
+kable(df_experiment %>% group_by(Wafer,Process,Temp,Strain) %>% summarise(.groups = 'rowwise')) %>% 
   kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
 ```
 
-# Visualization improvements for analyzing data from multiple processes 
+### Visualization improvements for analyzing data from multiple processes 
 
 As we can see, our lot now consists of wafers from 4 different processes, and more efforts are needed to visualize the data effectively. 
 
 For example, if we were to look at the test results "T01_RES" without much customization, it is pretty hard to understand which process conditions are better, even though we already took care of basic things like excluding the outliers etc. 
+
+#### Bad visualization of the data with a default box plot: 
 
 ```{r box-plot-bad}
 # Box plot with minimal customization
@@ -477,119 +538,191 @@ pbox <- ggplot(df_experiment, aes_string(y = 'T01_RES', x = 'Wafer')) +
           geom_boxplot(outlier.alpha = 0) + 
           geom_jitter(alpha = 0.2, size = 2, width = 0.2) + 
           facet_grid(~Wafer+Temp+Strain+Process, labeller = label_both, scales = 'free_x') + 
-          coord_cartesian(ylim = c(60,150)) + 
-          labs(title = 'Poor Visualization with the default box plot')
+          coord_cartesian(ylim = c(60,150)) 
 print(pbox)
 ```
 
 
 
-**To help visualize the data better for this experiment with multiple variables, I did the following customizations to result in more informative visualizations:**
+**To help visualize the data better for this experiment with multiple variables, I did the following customization to result in more informative visualizations:**
 (some of these features were already implemented in the previous set of box plots). 
 
-* Replace the upper "Facet"/"Trellis" ribbon with a color-coded grid of factor values for each variable, so that we can tell which process splits are similar and which are not
+* Replace the upper "Facet" ribbon with a color-coded grid of factor values for each variable, so that we can tell which process splits are similar and which are not
 * Automatically calculate the appropriate Y-range for each variable by using "box plot.stats" function, and also look at the test upper and lower limits
 * Add wafer map below each box plot so that we can compare any systematic differences between processes
-* Apply log-scale for the currents T04 thru T06, as they are expected to vary in orders of magnitude
+* Apply log-scale for the currents T04 through T06, as they are expected to vary in orders of magnitude
 
 
-```{r box-plots-better, dpi = 300, results='asis', warning = F, fig.height=6}
+```{r box-plots-better, dpi = 300, results='asis', warning = F, fig.height=6, fig.width=12}
+
 
 # Change Wafer column to factor type for better formatting
 df_experiment$Wafer <- as.factor(df_experiment$Wafer)
 
 # The columns to be used for grouping / faceting
 # This can be customized based on experiment conditions
-grouping_cols <- c('Temp','Strain','Process','Wafer')
-facet_formula = as.formula(paste("~",paste0(grouping_cols, collapse = '+')))
+grouping_cols <- c('Temp', 'Strain', 'Process', 'Wafer')
+facet_formula = as.formula(paste("~", paste0(grouping_cols, collapse = '+')))
 
 # Code below generates a tile plot with experiment variables on Y-axis
-# and various levels of those variables color coded 
+# and various levels of those variables color coded
 # this tile plot replaces the ribbon / strip associated with the facet information
 
-group_table <- df_experiment %>% group_by(.dots = grouping_cols) %>% summarise()
+group_table <-
+  df_experiment %>% group_by(.dots = grouping_cols) %>% summarise(.groups = 'rowwise')
 group_table2 <- group_table
-colnames(group_table2) <- paste0(colnames(group_table2),'_tmp1')
+colnames(group_table2) <- paste0(colnames(group_table2), '_tmp1')
 group_table <- cbind(group_table, group_table2)
-group_table_stack <- melt(group_table,id.vars = grouping_cols, variable.name = 'Split')
-group_table_stack$Split <- factor(gsub('_tmp1$','',group_table_stack$Split), 
-                                  levels = rev(grouping_cols))
+group_table_stack <-
+  melt(group_table, id.vars = grouping_cols, variable.name = 'Split')
+group_table_stack$Split <-
+  factor(gsub('_tmp1$', '', group_table_stack$Split),
+         levels = rev(grouping_cols))
 group_table_stack$value2 <- group_table_stack$value
 group_table_stack$value2[group_table_stack$Split == 'Wafer'] <- NA
-pdoe <- ggplot(group_table_stack, aes(x = Wafer, y = Split, label = value)) + 
-          geom_tile(aes(fill = value2), color = 'black') + 
-          geom_text(size = 4) +
-          facet_grid(facet_formula,scales = 'free_x') + 
-          scale_x_discrete(expand = c(0,0)) + 
-          theme(legend.key.size = unit(0, 'cm'), 
-                legend.text = element_text(size = 1, color = 'white'),
-                axis.title.x = element_blank(), axis.text.x = element_blank(), 
-                axis.ticks.x = element_blank(),axis.title.y = element_blank(), 
-                axis.text.y = element_text(size = 10, vjust = 0.5),
-                strip.text = element_blank(), panel.spacing.x = unit(0.05, "lines"), 
-                panel.background = element_blank(), plot.margin = margin(0, 0.1, -0.1, 0.1, "cm"), 
-                plot.background = element_blank())  + 
-         labs(fill = '')  + 
-         scale_fill_manual(values = get_palette('Pastel1',length(unique(group_table_stack$value2)))) 
+p_strip <-
+  ggplot(group_table_stack, aes(x = Wafer, y = Split, label = value)) +
+  geom_tile(aes(fill = value2), color = 'black') +
+  geom_text(size = 4) +
+  facet_grid(facet_formula, scales = 'free_x') +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(
+    legend.key.size = unit(0, 'cm'),
+    legend.text = element_text(size = 1, color = 'white'),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(size = 10, vjust = 0.5),
+    strip.text = element_blank(),
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.background = element_blank(),
+    plot.margin = margin(0, 0.1,-0.1, 0.1, "cm"),
+    plot.background = element_blank()
+  )  +
+  labs(fill = '')  +
+  scale_fill_manual(values = get_palette('Pastel1', length(unique(
+    group_table_stack$value2
+  ))))
 
 # Loop through the test data columns and generate one plot for each test
-for(col in grep('T0',colnames(df_experiment),value = T)){
-
+for (col in grep('T0', colnames(df_experiment), value = T)) {
   # Automatically determine the limits to be used for Y-axis
   # This is to exclude outliers and zoom to a sensible window
   
-  ylim1 <- boxplot.stats(df_experiment[,col], coef = 1.6)$stats[c(1,5)]
-  ybox_min <- min(ylim1[1],df_limits[col,'LowerLimit']*0.8, na.rm = T)
-  ybox_max <- max(ylim1[2],df_limits[col,'UpperLimit']*1.2, na.rm = T)
+  ylim1 <-
+    boxplot.stats(df_experiment[, col], coef = 1.6)$stats[c(1, 5)]
+  ybox_min <-
+    min(ylim1[1], df_limits[col, 'LowerLimit'] * 0.8, na.rm = T)
+  ybox_max <-
+    max(ylim1[2], df_limits[col, 'UpperLimit'] * 1.2, na.rm = T)
   
-  pbox <- ggplot(df_experiment, aes_string(y = col, x = 'Wafer', color = 'Process')) + 
-            geom_boxplot(outlier.alpha = 0) + 
-            
-            # apply the automatic Y-axis limits from above             
-            coord_cartesian(ylim = c(ybox_min,ybox_max)) + 
-            geom_jitter(alpha = 0.2, size = 2, width = 0.2) +
+  pbox <- ggplot(df_experiment, aes_string(y = col, x = 'Wafer')) +
+    geom_boxplot(outlier.alpha = 0) +
     
-            # faceting / grouping based on the chosen categories
-            facet_grid(facet_formula,scales = 'free_x') +  
+    # apply the automatic Y-axis limits from above
+    coord_cartesian(ylim = c(ybox_min, ybox_max)) +
+    geom_jitter(alpha = 0.2,
+                size = 2,
+                color = 'gray50',
+                width = 0.2) +
     
-            # add lines corresponding to the upper and lower test limits    
-            geom_hline(yintercept = df_limits[col,'LowerLimit'], color = 'red', linetype = 2) + 
-            geom_hline(yintercept = df_limits[col,'UpperLimit'], color = 'red', linetype = 2) + 
-            
-            # theme settings for better formatting
-            theme(strip.text = element_blank(), 
-                  axis.text.x = element_blank(), axis.title.x = element_blank(), 
-                  axis.text.y = element_text(size = 10),
-                  panel.spacing.x = unit(0.05,"lines"), panel.border = element_rect(color = 'gray', fill = NA, size = 0.5),
-                  plot.margin = margin(-0.1, 0.1, -0.1, 0.1, 'cm'),
-                  axis.ticks.x = element_blank())
+    # faceting / grouping based on the chosen categories
+    facet_grid(facet_formula, scales = 'free_x') +
+    
+    # add lines corresponding to the upper and lower test limits
+    geom_hline(yintercept = df_limits[col, 'LowerLimit'],
+               color = 'red',
+               linetype = 2) +
+    geom_hline(yintercept = df_limits[col, 'UpperLimit'],
+               color = 'red',
+               linetype = 2) +
+    
+    # theme settings for better formatting
+    theme_bw() +
+    theme(
+      strip.text = element_blank(),
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.y = element_text(size = 10),
+      panel.spacing.x = unit(0.05, "lines"),
+      panel.border = element_rect(
+        color = 'gray',
+        fill = NA,
+        size = 0.5
+      ),
+      plot.margin = margin(-0.1, 0.1,-0.1, 0.1, 'cm'),
+      axis.ticks.x = element_blank()
+    )
+  
+  
   
   # currents are better displayed in log-scale on Y-axis
-  if(grepl('_I',col)){
-    pbox <- pbox + scale_y_log10()  
+  if (grepl('_I', col)) {
+    pbox <- pbox + scale_y_log10()
   }
   
-  pmap <- ggplot(df_experiment, aes(x = X, y = Y)) + geom_tile(color='gray', aes_string(fill = col)) + 
-          facet_grid(facet_formula,scales = 'free_x') + 
-          scale_fill_gradient(low = 'green', high = 'red', limits = ylim1, oob = squish) +
-          scale_x_continuous(breaks = c(-50,0,50)) + 
-          theme(strip.text = element_blank(), 
-                #axis.text.x = element_text(angle = 270, hjust = 0),
-                plot.margin = margin(0, 0.1, 0, 0.1, 'cm'),
-                panel.spacing.x = unit(0.05,"lines"), panel.border = element_rect(color = 'gray', fill = NA, size = 0.5))
+  pmap <-
+    ggplot(df_experiment, aes(x = X, y = Y)) + geom_tile(color = 'gray', aes_string(fill = col)) +
+    facet_grid(facet_formula, scales = 'free_x') +
+    scale_fill_viridis_c(
+      option = 'plasma',
+      limits = ylim1,
+      oob = squish,
+      direction = -1
+    ) +
+    scale_x_continuous(breaks = c(-50, 0, 50)) +
+    theme_bw() + 
+    theme(
+      strip.text = element_blank(),
+      #axis.text.x = element_text(angle = 270, hjust = 0),
+      plot.margin = margin(0, 0.1, 0, 0.1, 'cm'),
+      panel.spacing.x = unit(0.05, "lines"),
+      panel.border = element_rect(
+        color = 'gray',
+        fill = NA,
+        size = 0.5
+      )
+    )
+  
+  
+  p_legend <-
+    ggarrange(
+      get_legend(pmap),
+      ggplot() + theme_void(),
+      nrow = 2,
+      heights = c(2, 1)
+    )
+  p_strip <- p_strip + theme(legend.position = 'none')
+  pmap <- pmap + theme(legend.position = 'none')
+  
   
   # print one header per graph (useful when automating reports)
   cat('###  ', col, '\n\n')
   
   # Use ggrrange to combine multiple sections of the plot
-  print(ggarrange(pdoe,pbox, pmap, nrow = 3, heights = c(2,2.5,1.5), align = 'v'))
+  print(
+    ggarrange(
+      p_strip,
+      ggplot() + theme_void(),
+      pbox,
+      ggplot() + theme_void(),
+      pmap,
+      p_legend,
+      nrow = 3,
+      ncol = 2,
+      heights = c(2, 2.5, 1.5),
+      widths = c(9, 1),
+      align = 'v'
+    )
+  )
   
   cat(' \n\n')
 }
 
 ```
 
-#### Observations from the experiment
+### Observations from the experiment
 
 From the above we data, we can see the following:
 
@@ -602,59 +735,102 @@ We can notice the same in the yield by wafer/process tile-plot below, where the 
 
 ```{r yield-tile-2, fig.width=12}
 
+
 # The function below generates a tile plot of yield by category for each wafer
 # taking the test data and test limits as inputs
-plot_yield_tile2 <- function(df_limits, df_test_data){
-  
+plot_yield_tile2 <- function(df_limits, df_test_data) {
   # Generate a separate Pass/Fail column for each test
-  for(i in 1:nrow(df_limits)){
-    df_test_data[paste0('Pass_',df_limits$TestName[i])] <- (
-      (is.na(df_limits$UpperLimit[i]) | 
-         (df_test_data[paste0(df_limits$TestName[i])] < df_limits$UpperLimit[i]))  & 
-      (is.na(df_limits$LowerLimit[i]) | 
-         (df_test_data[paste0(df_limits$TestName[i])] > df_limits$LowerLimit[i]))
-      )
+  for (i in 1:nrow(df_limits)) {
+    df_test_data[paste0('Pass_', df_limits$TestName[i])] <- ((
+      is.na(df_limits$UpperLimit[i]) |
+        (df_test_data[paste0(df_limits$TestName[i])] < df_limits$UpperLimit[i])
+    )  &
+      (
+        is.na(df_limits$LowerLimit[i]) |
+          (df_test_data[paste0(df_limits$TestName[i])] > df_limits$LowerLimit[i])
+      ))
   }
   
   # Calculate yield grouped by category and wafer
   df_category_yield <- df_test_data[c(grouping_cols,
-                                      grep('Pass',colnames(df_test_data),value = T))] %>% 
-                          melt(id.vars = c(grouping_cols), variable.name = 'Category') %>%
-                          group_by(.dots = c(grouping_cols,'Category')) %>% 
-                          summarise(Yield_Percent = sum(value)/n(), NumDies = n())
+                                      grep('Pass', colnames(df_test_data), value = T))] %>%
+    melt(id.vars = c(grouping_cols),
+         variable.name = 'Category') %>%
+    group_by(.dots = c(grouping_cols, 'Category')) %>%
+    summarise(
+      Yield_Percent = sum(value) / n(),
+      NumDies = n(),
+      .groups = 'rowwise'
+    )
   
   # Cleaning up the category names
-  df_category_yield$Category <- gsub('Pass$','Final_Yield',df_category_yield$Category)
+  df_category_yield$Category <-
+    gsub('Pass$', 'Final_Yield', df_category_yield$Category)
   
   # Generating the tile plot
-  pyield <- ggplot(df_category_yield, aes(x = Wafer, y = Category, fill = Yield_Percent)) + 
-            geom_tile(color = 'black') + 
-            facet_grid(facet_formula, scales = 'free_x') + 
-            geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 4) + 
-            scale_fill_gradient(low = 'red', high = 'green', 
-                                limits = c(0.2,1), labels = scales::percent) + 
-            theme(strip.text = element_blank(), 
-                  axis.text.x = element_blank(), axis.title.x = element_blank(), 
-                  axis.text.y = element_text(size = 10),
-                  panel.spacing.x = unit(0.05,"lines"), panel.border = element_rect(color = 'gray', fill = NA, size = 0.5),
-                  plot.margin = margin(-0.1, 0.1, 0, 0.1, 'cm'),
-                  axis.ticks.x = element_blank())
+  pyield <-
+    ggplot(df_category_yield,
+           aes(x = Wafer, y = Category, fill = Yield_Percent)) +
+    geom_tile(color = 'black') +
+    facet_grid(facet_formula, scales = 'free_x') +
+    geom_text(aes(label = scales::percent(Yield_Percent, accuracy = 1)), size = 4) +
+    scale_fill_distiller(palette = 'Blues',
+                         trans = "reverse",
+                         labels = scales::percent) +
+    theme_bw() +
+    scale_x_discrete(expand = expansion(0, 0)) +
+    scale_y_discrete(expand = expansion(0, 0)) +
+    theme(
+      strip.text = element_blank(),
+      axis.text.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.y = element_text(size = 10),
+      panel.spacing.x = unit(0.05, "lines"),
+      panel.border = element_rect(
+        color = 'gray',
+        fill = NA,
+        size = 0.5
+      ),
+      plot.margin = margin(-0.1, 0.1, 0, 0.1, 'cm'),
+      axis.ticks.x = element_blank()
+    )
+  
+  p_legend <- ggarrange(
+    get_legend(pyield),
+    ggplot() + theme_void(),
+    nrow = 2,
+    heights = c(2, 1)
+  )
+  
+  p_strip <- p_strip + theme(legend.position = 'none')
+  pyield <- pyield + theme(legend.position = 'none')
+  
   
   # Use ggrrange to combine multiple sections of the plot
-  return(ggarrange(pdoe,pyield, nrow = 2, heights = c(1,2),align = 'v'))
+  return(
+    ggarrange(
+      p_strip,
+      ggplot() + theme_void(),
+      pyield,
+      p_legend,
+      nrow = 2,
+      ncol = 2,
+      heights = c(1, 2),
+      widths = c(9, 1),
+      align = 'v'
+    )
+  )
 }
 
-plot_yield_tile2(df_limits,df_experiment)
+plot_yield_tile2(df_limits, df_experiment)
 
 ```
 
-# Statistical verification of process improvement
+### Statistical verification of process improvement
 
 So far we have qualitatively observed that the Process-A1 improved parameters, but ideally we would like to use a more scientific way of determining if Process-A1 made a significant difference.
 
 We can use an independent t-test to check if the means of two processes are statistically different for each test and the yield (column: "Pass") using the following code. 
-
-Using p-value < 0.05, as the criterion for statistical significance of difference in means, we can see that Process-A1 caused statistically significant changes in T01_RES, and T02_VTH, and the final Pass/Fail column ("Pass"), and it didn't affect the other tests such as T03_IOFF, T06_IG_5V etc. 
 
 These results are also consistent with the yield improvement observations from above. 
 
@@ -671,6 +847,6 @@ lapply(df_Baseline_and_ProcessA1[,grep('T0|Pass',colnames(df_Baseline_and_Proces
        function(x) t.test(x ~ df_Baseline_and_ProcessA1$Process))
 ```
 
-# Conclusions
+### Conclusions
 
 In summary, this example demonstrates various data analysis, data visualization, and hypothesis testing techniques applied to a sample semiconductor test data-set.
