@@ -1184,6 +1184,7 @@ for (col in grep(&#39;T0&#39;, colnames(df_experiment), value = T)) {
       nrow = 2,
       heights = c(2, 1)
     )
+  
   p_strip &lt;- p_strip + theme(legend.position = &#39;none&#39;)
   pmap &lt;- pmap + theme(legend.position = &#39;none&#39;)
   
@@ -1315,21 +1316,17 @@ plot_yield_tile2 &lt;- function(df_limits, df_test_data) {
   p_strip &lt;- p_strip + theme(legend.position = &#39;none&#39;)
   pyield &lt;- pyield + theme(legend.position = &#39;none&#39;)
   
+  p_main &lt;-     ggarrange(
+      p_strip,
+      pyield,
+      nrow = 2,
+      ncol = 1,
+      heights = c(1, 2),
+      align = &#39;hv&#39;
+    )
   
   # Use ggrrange to combine multiple sections of the plot
-  return(
-    ggarrange(
-      p_strip,
-      ggplot() + theme_void(),
-      pyield,
-      p_legend,
-      nrow = 2,
-      ncol = 2,
-      heights = c(1, 2),
-      widths = c(9, 1),
-      align = &#39;v&#39;
-    )
-  )
+  return(p_main)
 }
 
 plot_yield_tile2(df_limits, df_experiment)</code></pre>
